@@ -59,6 +59,7 @@ SECTIONS = [
     ("provenance",  "provenance"),
     ("docbuilder",  "docbuilder"),
     ("cloudcost",   "cloudcost"),
+    ("ct-bot",      "ct-bot"),
     ("eduloka",     "eduloka"),
 ]
 

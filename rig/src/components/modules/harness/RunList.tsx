@@ -130,6 +130,7 @@ const USE_CASE_PREFIXES: Array<{ prefixes: string[]; label: string }> = [
   { prefixes: ['cloudcost'],                       label: 'Cloudcost' },
   { prefixes: ['docbuilder'],                      label: 'Docbuilder' },
   { prefixes: ['eduloka'],                         label: 'Eduloka' },
+  { prefixes: ['ct-bot'],                          label: 'CT-Bot' },
   // The api agents are labelled by their agent id, not by use-case directory name —
   // `api-tenant` / `api-gateway` matched nothing and were the dead entries BL-083 found.
   { prefixes: ['at1cmd', 'at1qry'],                label: 'API / Tenant' },

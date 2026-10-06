@@ -1,8 +1,8 @@
 """T0 existence checks for the ct-bot docs skeleton.
 
-Dormant until T1 (`pytestmark` below): the use case is registered but has no
-agent file, so these checks ride the deferred set rather than the gate. They
-still collect and still import, per the `dormant` marker's contract.
+T1 removed the `dormant` marker: the use case is active (main.exs landed),
+so these checks gate again. They assert the docs surfaces every later
+ticket edits against.
 """
 
 from pathlib import Path
@@ -10,8 +10,6 @@ from pathlib import Path
 import pytest
 
 CT_BOT = Path(__file__).resolve().parent.parent
-
-pytestmark = pytest.mark.dormant
 
 
 def test_milestone_exists():
