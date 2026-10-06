@@ -39,6 +39,7 @@ status the registry declares.
 | [`api/tenant/`](api/tenant/) | TAP protocol, tenant side — agent-to-agent enrollment via ct.stu API | ✅ T1–T4 |
 | [`api/gateway/`](api/gateway/) | TAP protocol, gateway side — intent execution against ct.stu | ✅ T1–T4 |
 | [`boxy-pipeline/`](boxy-pipeline/) | Catalog and sales-order extraction; pure Python, no Aetheris agent | ⏸ dormant since 2026-08-16 |
+| [`ct-bot/`](ct-bot/) | CampusTrack panel agents — main, sanitize, parse, validate, compose, suggestions (chat path; not the TAP track, no ct-api) | ⏸ dormant — docs only until T1 |
 | [`cloudcost/`](cloudcost/) | Multi-provider cloud spend collection and reporting | ✅ |
 | [`docbuilder/`](docbuilder/) | Branded document generation — invoices, offer letters (PDF + DOCX) | ✅ |
 | [`eduloka/`](eduloka/) | Discovery milestone | ✅ |

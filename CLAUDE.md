@@ -663,6 +663,7 @@ open.
 | api/tenant | `docs/uc-api-agent-design.md`, `api/docs/t1-implementation-notes.md` |
 | api/gateway | `docs/uc-api-agent-design.md`, `api/docs/t1-implementation-notes.md` |
 | boxy-pipeline | `boxy-pipeline/docs/m-boxy-pipeline.md`, `boxy-pipeline/docs/m-boxy-pipeline-1a.md`, `boxy-pipeline/docs/runbook.md` |
+| ct-bot | `ct-bot/README.md`, `ct-bot/milestone.md`, `ct-bot/docs/agents/README.md` |
 | eduloka | `eduloka/runbook.md`, `docs/milestones/m-eduloka-discovery-summary.md` |
 | docbuilder | `docbuilder/runbook.md`, `docbuilder/milestone.md` |
 | cloudcost | `cloudcost/runbook.md`, `cloudcost/milestone.md`, `cloudcost/m2-milestone.md` |

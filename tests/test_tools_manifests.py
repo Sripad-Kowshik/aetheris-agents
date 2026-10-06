@@ -136,6 +136,7 @@ def test_discovery_sweep_intact():
         "api",
         "boxy-pipeline",
         "cloudcost",
+        "ct-bot",
         "docbuilder",
         "drive",
         "eduloka",
