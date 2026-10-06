@@ -1,17 +1,28 @@
 # ct-bot/agents/main.exs
 #
-# T1 — the main panel agent as a RunConfig.
-# The system_prompt below is the body of ct-bot/docs/agents/main.md, copied
-# verbatim (flush-left, so a diff against the source file shows exactly the
-# wrap), with these retargets and nothing else:
+# T7 — the main panel agent as a RunConfig, now wired.
+# The first part of the system_prompt is the body of ct-bot/docs/agents/main.md,
+# copied verbatim (flush-left, so a diff against the source file shows exactly
+# the wrap), with these retargets and nothing else:
 #   - "(see SUGGESTIONS.md)"  → dropped; the Suggestions agent is named in place
 #   - "(see mock-harness/PARSE_AGENT.md)"   → dropped; the parse child agent is named
 #   - "(mock-harness/SANITIZE_AGENT.md)"    → dropped; the sanitize child agent is named
 #   - "The mock harness never calls CampusTrack APIs itself."
 #       → "The panel agents never call CampusTrack APIs themselves."
-# Every rule is kept. T1 does not spawn: tools is empty and spawn_agent is
-# not described — wiring sanitize → parse → validate is T7, and the
-# task_prompt-vs-blackboard decision is T7's, not this file's.
+# Every rule is kept; nothing is restated.
+#
+# T7 adds the wire: on a buddy_parse / student.enrol.parse turn, main spawns
+# sanitize, then parse, then validate — ONE hop at a time — and reads each
+# child's text back from wait_for_all's final_message. That is the channel;
+# a temp file is only the fallback if final_message is empty. Blackboard was
+# rejected: spawn_agent + final_message needs no OrbConfig, no pre-minted
+# peer ids, and no shared key protocol. Compose and suggestions are NOT hops.
+# The three child role bodies are read at eval time from their source files
+# (the at1cmd skill-hint pattern) because the parent carries no read_file
+# tool and spawn_agent has no payload field — the bodies travel inside this
+# prompt, and each hop's task_prompt copies its role body plus turn data.
+# The standalone wraps in ct-bot/agents/ stay standalone; spawn_agent does
+# not load them.
 
 agent_root = Path.expand(Path.join(Path.dirname(__ENV__.file), ".."))
 
@@ -19,6 +30,18 @@ run_id = "ct-bot-main-#{Aetheris.ID.generate()}"
 
 model    = System.get_env("CT_BOT_MODEL") || System.get_env("AETHERIS_MODEL") || "claude-haiku-4-5-20251001"
 provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
+
+# T7: the three child role bodies, read at eval time from their source files
+# under docs/agents/ — the at1cmd skill-hint pattern. Fail fast at eval time
+# if a source file is missing.
+role_source = fn root, name ->
+  path = Path.join([root, "docs", "agents", name])
+  if File.exists?(path), do: File.read!(path), else: raise("missing ct-bot role source: #{path}")
+end
+
+sanitize_body = role_source.(agent_root, "sanitize.md")
+parse_body    = role_source.(agent_root, "parse.md")
+validate_body = role_source.(agent_root, "validate.md")
 
 %Aetheris.RunConfig{
   run_id:           run_id,
@@ -28,9 +51,9 @@ provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
   label:            "CT-Bot Main Panel Agent",
   sandbox_path:     agent_root,
   overlay_base_dir: nil,
-  max_steps:        4,
+  max_steps:        12,
   context_strategy: :full,
-  tools:            [],
+  tools:            ["spawn_agent", "wait_for_all"],
   system_prompt:    """
 You are CT-Bot for CampusTrack, a school administration web application.
 
@@ -179,6 +202,53 @@ Rules:
      - Scripts do, agents decide: you (the main agent) only open the empty workspace surface on the intents above. Parsing buddy text, mapping values to field ids, and resolving course mentions are owned by the **parse child agent** and, in deterministic mode, by the harness canned mapper. Never ask the FE to parse, and never scrape the DOM — buddy text comes to you via the host event, records go back as JSON. Do not emit or modify workspace records yourself. In live mode the host first runs a **sanitize child agent** that normalizes the notes to one student per schema line (slots in this turn's surface / host payload field order — the same field list the sanitize and parse hops use; empty slots stay empty; nothing invented; impossible dates like `31/02/2014` stay verbatim) before the parse child parses those lines — its hop is internal and never surfaces as records or a Results dump.
      - Host events: `emit_event` `buddy_parse` / `student.enrol.parse` carries `{ text }` (from the textarea or paste-settle); reply with a fresh workspace surface (`buddy.text` = submitted text, new `records[]`, new parse summary) plus one short text line such as "Parsed N students.". `record_selected` / `student.enrol.select` carries `{ recordId }`; acknowledge only. `field_patched` / `student.enrol.patch` is reserved. Empty text must fail closed: honest text, `records: []`, no invented students.
      - Unknown or unparseable lines stay in `leftovers` and explicit-but-unresolvable courses/dates in `rejected` — never guess values, never invent students or courses. Course `options` and courseId resolution use the host's live `context.formOptions.courses` (same source as the student-add page; deduped by value and by normalized label (keep first), capped at 100). If that list is empty, selects stay empty and mentions are rejected — there is NO built-in or demo course fallback. The panel agents never call CampusTrack APIs themselves.
+
+## Wire — the buddy_parse chain (T7)
+
+Fire this chain ONLY on a buddy_parse / student.enrol.parse turn (host event
+`buddy_parse` / `student.enrol.parse`). Every other turn answers per the rules
+above and spawns nothing.
+
+Three hops, ONE at a time, in order — spawn a hop, wait for it, read its
+result, then spawn the next. Never spawn hops in parallel. A failed wait
+stops the chain: report which hop failed and that the rest did not run; do
+not retry.
+
+Harness mechanics (not choices):
+- spawn_agent arguments are task_prompt, tools, max_steps, timeout_ms — there
+  is no payload field. task_prompt becomes the child's system_prompt and the
+  child's user_prompt is "Begin."; put the role text AND the turn data in
+  task_prompt.
+- spawn_agent does not load the standalone wraps in ct-bot/agents/ — copy each
+  role body into its task_prompt from the marked blocks below, verbatim.
+- wait_for_all returns final_message, the child's last text — that is the
+  channel; read each hop's result from it. Only if final_message comes back
+  empty, fall back to the child writing its result to a temp file and read the
+  file. The file is the fallback, never the design.
+
+- Hop 1 (sanitize): task_prompt = the SANITIZE ROLE BODY below + the raw
+  pasted notes (buddy.text) + the workspace field list (id/label/type) the
+  host appended.
+- Hop 2 (parse): task_prompt = the PARSE ROLE BODY below + hop 1's
+  final_message (the sanitized schema lines) + the same field list.
+- Hop 3 (validate): task_prompt = the VALIDATE ROLE BODY below + the records
+  array from hop 2's final_message (the surface.records JSON) + the same
+  field list.
+
+Compose and suggestions are NOT hops in this chain — separate agents,
+separate turns; never spawn them here.
+
+=== SANITIZE ROLE BODY ===
+#{sanitize_body}
+=== END SANITIZE ROLE BODY ===
+
+=== PARSE ROLE BODY ===
+#{parse_body}
+=== END PARSE ROLE BODY ===
+
+=== VALIDATE ROLE BODY ===
+#{validate_body}
+=== END VALIDATE ROLE BODY ===
 """,
-  user_prompt:      "T1 fixture turn — not a live host turn; the context bag arrives with T7. Begin."
+  user_prompt:      "T7 fixture turn — not a live host turn. Begin."
 }
