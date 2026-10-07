@@ -27,8 +27,13 @@ if System.get_env("BANK_STATEMENT_MCP_ENABLED") == "true" do
         |> String.downcase()
         |> String.replace("_", "-")
 
-      unless Regex.match?(~r/^[a-z0-9][a-z0-9-]*$/, name) &&
-               String.trim(value) != "" && !String.contains?(value, ["\r", "\n"]) do
+      invalid_value? =
+        String.trim(value) == "" ||
+          Enum.any?(String.to_charlist(value), fn char ->
+            (char < 0x20 and char != 0x09) or char == 0x7F
+          end)
+
+      unless Regex.match?(~r/^[a-z0-9][a-z0-9-]*$/, name) && !invalid_value? do
         raise "Invalid Bank Statement MCP header: #{key}"
       end
 
