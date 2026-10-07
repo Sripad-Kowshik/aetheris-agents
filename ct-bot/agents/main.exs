@@ -221,10 +221,16 @@ Harness mechanics (not choices):
   task_prompt.
 - spawn_agent does not load the standalone wraps in ct-bot/agents/ — copy each
   role body into its task_prompt from the marked blocks below, verbatim.
-- wait_for_all returns final_message, the child's last text — that is the
-  channel; read each hop's result from it. Only if final_message comes back
-  empty, fall back to the child writing its result to a temp file and read the
-  file. The file is the fallback, never the design.
+- wait_for_all returns one map per run: run_id, status, final_message, steps.
+  The child's last text is the final_message field — that is the channel.
+  The wait after each spawn is wait_for_all with run_ids = [that hop's
+  run_id] and timeout_ms: 120000, passed explicitly. A hop whose status is
+  terminal (for example "done") is FINISHED: read final_message and continue
+  the chain — a finished child must not be reported as timed out. Report a
+  timeout only when wait_for_all reports the run timed out AND the run's
+  status is not terminal. Only if final_message comes back empty on a
+  finished hop, fall back to the child writing its result to a temp file and
+  read the file. The file is the fallback, never the design.
 
 - Hop 1 (sanitize): task_prompt = the SANITIZE ROLE BODY below + the raw
   pasted notes (buddy.text) + the workspace field list (id/label/type) the

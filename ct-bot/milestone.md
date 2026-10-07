@@ -275,6 +275,8 @@ cd ~/sandbox/elixirws/aetheris-agents
 python3 -m pytest ct-bot/tests/ -v
 ```
 
+- [ ] Follow-up (2026-10-06): a finished sanitize child (`run_dvrE-g`, agent_finished in ~1.5 s) was reported "timed out" and the chain stopped before parse; the wire section's wait bullet now pins `timeout_ms: 120000` per hop and reads the result map's `final_message` beside `status` — a finished child is never reported as timed out; live re-run of the full chain still owed.
+
 ---
 
 ## Repository structure

@@ -97,3 +97,35 @@ not a role; not a live host turn.
 - Mechanical diff of each interpolated role body against its source file:
   **zero changed lines** for all three.
 - Classifier guard: label unchanged, `tests/test_run_classifier.py` green.
+
+---
+
+## T7 follow-up — a finished child was reported as timed out (2026-10-06)
+
+**Symptom.** On a live workspace parse turn the parent reported "The
+sanitize hop timed out and did not complete" and stopped: no parse run
+exists. The child trajectory (`run_dvrE-g`) shows the opposite outcome —
+the sanitize child reached `agent_finished` in about 1.5 s carrying the
+three schema lines. The hop completed; the parent did not read the
+completion.
+
+**Diagnosis.** The T7 wire section pinned the channel but not the call's
+shape: it never said what `timeout_ms` to pass, and it described
+`wait_for_all`'s return as if it were the text itself. The harness fact
+is that the result is one map per run — `run_id`, `status`,
+`final_message`, `steps` (`lib/aetheris/agent/server.ex:1046-1064@H`,
+`build_run_result/3`; `final_message` is the last `llm_responded` text
+event's `raw_response`). Left to improvise both the timeout and the read,
+the parent LLM misread a finished child as a timed-out one.
+
+**Fix (the wire section only; no agent file touched, no `max_steps`
+change).** The wait bullet now says: pass `timeout_ms: 120000` explicitly
+per hop (the `at1cmd` message-wait precedent, generous against the
+observed 1.5 s); read the result map's `final_message` **beside**
+`status`; a hop with a terminal status is finished — read
+`final_message` and continue, never report it as timed out; report a
+timeout only when the wait reports the run timed out AND its status is
+not terminal; the temp-file fallback stays the empty-`final_message`
+fallback on a finished hop. `max_steps` stays 12 — the missed result was
+a read defect, not a step deficit, and raising it would have hidden the
+miss.
