@@ -123,16 +123,6 @@
 
 ---
 
-### BL-285 — the runbook's HTTP API section never names AETHERIS_AGENTS_ROOT, the root BL-284's route resolves agent_path against
-- state: open
-- type: documentation
-- area: harness — runbook.md
-- priority: unset — the arbiter's · size: XS _(proposed)_
-- evidence: docs/evidence/BL-285.md
-- done-when: the existing HTTP API section names AETHERIS_AGENTS_ROOT, the default, and that ct-bot/agents/main.exs is relative to it.
-
----
-
 
 ---
 

@@ -9896,3 +9896,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-284.md
 - done-when: POSTing agent_path + user_prompt gets 202 with run_id; prompt_built carries the supplied user_prompt and the file's tool list, no system_prompt in the request; path confined to the agents root. Design: docs/aetheris/backlog/bl-284
 - disposition: fixed
+
+---
+
+### BL-285 — the runbook's HTTP API section never names AETHERIS_AGENTS_ROOT, the root BL-284's route resolves agent_path against
+- state: done
+- type: documentation
+- area: harness — runbook.md
+- priority: unset — the arbiter's · size: XS _(proposed)_
+- evidence: docs/evidence/BL-285.md
+- done-when: the existing HTTP API section names AETHERIS_AGENTS_ROOT, the default, and that ct-bot/agents/main.exs is relative to it.
+- disposition: fixed
