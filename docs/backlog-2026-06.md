@@ -123,16 +123,6 @@
 
 ---
 
-### BL-284 — an HTTP client cannot start a run from an existing .exs and supply only the user turn
-- state: open
-- type: missing capability
-- area: harness — API
-- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
-- evidence: docs/evidence/BL-284.md
-- done-when: POSTing agent_path + user_prompt gets 202 with run_id; prompt_built carries the supplied user_prompt and the file's tool list, no system_prompt in the request; path confined to the agents root. Design: docs/aetheris/backlog/bl-284
-
----
-
 
 ---
 

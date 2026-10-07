@@ -1,6 +1,13 @@
 # BL-284 — Start a run from an existing agent file over HTTP (design brief)
 
-**Status:** T0 filed (this document). T1 not started.
+**Status:** closed 2026-10-06. T1 landed in the harness (`POST
+/api/playground/agent-file-runs`), and the live check passed: POSTing
+`ct-bot/agents/main.exs` with only a user turn returned `202` with run
+`ct-bot-main-4IeDhw`, whose `prompt_built` carried the supplied
+`user_prompt` and the file's tools — the C9 test, discharged on a live
+run. Row BL-284 closed 2026-10-06 (disposition: fixed). The evidence
+file's "live curl owed" sentence is discharged by that run and left
+unedited there by the closing ticket's instruction.
 **Type:** design brief. A contract for the T1 cc:prompt, cited by item
 number (`§3 C2`).
 **Date:** 2026-10-06

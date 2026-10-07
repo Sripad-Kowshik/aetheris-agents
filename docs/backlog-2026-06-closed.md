@@ -9885,3 +9885,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-207.md
 - done-when: a decision is recorded on this row: (a) `pivot_root` in the worker's mount namespace plus a shared confinement crate, or (b) `run_command` declared uncontained as a standing position in the determinism contract.
 - disposition: superseded
+
+---
+
+### BL-284 — an HTTP client cannot start a run from an existing .exs and supply only the user turn
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
+- evidence: docs/evidence/BL-284.md
+- done-when: POSTing agent_path + user_prompt gets 202 with run_id; prompt_built carries the supplied user_prompt and the file's tool list, no system_prompt in the request; path confined to the agents root. Design: docs/aetheris/backlog/bl-284
+- disposition: fixed
