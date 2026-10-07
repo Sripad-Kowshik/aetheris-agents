@@ -153,6 +153,66 @@ the file where it is easy to spot and validate.
 
 ## Orchestrator patterns
 
+### Bank Statement HTTP MCP agent
+
+`agents/bank_statement_agent.exs` loads `mcp/http/bank-statement/config.exs`
+into `RunConfig.mcp_servers`, following the environment-gated registration pattern
+in `provenance/agents/search_agent.exs`. Its native `tools` list is empty:
+the harness discovers descriptions and input schemas through MCP `tools/list`
+and invokes the selected tools through `tools/call`. There is no local statement
+processing logic or manually defined MCP schema.
+
+Set these variables in the environment inherited by the harness:
+
+| Variable | Meaning |
+|---|---|
+| `BANK_STATEMENT_MCP_ENABLED` | Only the exact value `true` enables the server; otherwise no server is registered. |
+| `BANK_STATEMENT_MCP_URL` | Required when enabled: the full MCP endpoint, including its path. HTTPS is required except on loopback. No embedded credentials. |
+| `BANK_STATEMENT_MCP_TIMEOUT_MS` | Positive integer; default `30000`. |
+| `BANK_STATEMENT_MCP_HEADER_<NAME>` | Authentication/context header value. The suffix becomes lowercase with underscores replaced by hyphens. For example, `BANK_STATEMENT_MCP_HEADER_AUTHORIZATION` sends `authorization`; `BANK_STATEMENT_MCP_HEADER_X_TENANT_ID` sends `x-tenant-id`. Use the names and values required by your server; no backend-specific headers are assumed. Empty or multiline values fail evaluation. |
+| `BANK_STATEMENT_REQUEST` | User request; defaults to `List my available bank statements.` |
+| `AETHERIS_PROVIDER`, `AETHERIS_MODEL` | Standard provider/model overrides; defaults to Anthropic and `claude-haiku-4-5-20251001`. The provider's credentials must also be configured. |
+
+Keep credentials in your local environment/secret manager, not committed files.
+Use an authorized test account: the harness records tool inputs/results, which
+can contain sensitive financial data. Supply every required auth/context header
+before running; authorization errors must not be treated as empty statements.
+
+From the sibling `aetheris/` harness, after setting the URL and server headers:
+
+```bash
+export BANK_STATEMENT_MCP_ENABLED=true
+export BANK_STATEMENT_REQUEST='List my available bank statements.'
+timeout -k 5s 180s mix aetheris run ../aetheris-agents/agents/bank_statement_agent.exs
+```
+
+Repeat with `Find my bank statement.` and
+`Convert the bank statement to hledger format.` Supply identifying information in
+the request if the discovered schema requires it. The agent asks for missing
+information in its final response; provide it on a new run.
+
+Validation from the `aetheris-agents/` root:
+
+```bash
+timeout -k 5s 120s python3 -m pytest tests/test_bank_statement_mcp.py -v
+# Opt-in real server + LLM acceptance check (requires the sibling harness):
+BANK_STATEMENT_MCP_TEST_LIVE=true timeout -k 5s 600s \
+  python3 -m pytest tests/test_bank_statement_mcp.py -v -k live_agent_flow
+```
+
+The live check requires a seeded test server where all example requests have
+enough information to succeed. It checks recorded calls and responses for
+`bank_statement_list`, `find_bank_statement`, and `bank_statement_to_hledger`.
+Inspect the local trajectory and final response to confirm the returned statement
+and hledger content match the seeded account. Elixir config tests are marked
+`integration` because they require an external runtime.
+
+This checkout does not carry the Bank Statement server or sibling harness.
+Local config evaluation is testable separately; live discovery, tool invocation,
+and final response validation require those services and provider credentials.
+The Rig HTTP registry currently does not resolve environment URLs or forward
+headers; this agent uses `RunConfig` directly rather than changing core MCP/Rig.
+
 ### Tool set
 
 ```elixir
