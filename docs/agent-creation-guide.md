@@ -170,26 +170,27 @@ Set these variables in the environment inherited by the harness:
 | `BANK_STATEMENT_MCP_URL` | Required when enabled: the full MCP endpoint, including its path. HTTPS is required except on loopback. No embedded credentials. |
 | `BANK_STATEMENT_MCP_TIMEOUT_MS` | Positive integer; default `30000`. |
 | `BANK_STATEMENT_MCP_HEADER_<NAME>` | Authentication/context header value. The suffix becomes lowercase with underscores replaced by hyphens. For example, `BANK_STATEMENT_MCP_HEADER_AUTHORIZATION` sends `authorization`; `BANK_STATEMENT_MCP_HEADER_X_TENANT_ID` sends `x-tenant-id`. Use the names and values required by your server; no backend-specific headers are assumed. Empty or multiline values fail evaluation. |
-| `BANK_STATEMENT_REQUEST` | User request; defaults to `List my available bank statements.` |
 | `AETHERIS_PROVIDER`, `AETHERIS_MODEL` | Standard provider/model overrides; defaults to Anthropic and `claude-haiku-4-5-20251001`. The provider's credentials must also be configured. |
 
 Keep credentials in your local environment/secret manager, not committed files.
 Use an authorized test account: the harness records tool inputs/results, which
 can contain sensitive financial data. Supply every required auth/context header
 before running; authorization errors must not be treated as empty statements.
+The agent uses a general fixed prompt. For a specific task, edit its `user_prompt`
+in `agents/bank_statement_agent.exs` before running it.
 
 From the sibling `aetheris/` harness, after setting the URL and server headers:
 
 ```bash
 export BANK_STATEMENT_MCP_ENABLED=true
-export BANK_STATEMENT_REQUEST='List my available bank statements.'
 timeout -k 5s 180s mix aetheris run ../aetheris-agents/agents/bank_statement_agent.exs
 ```
 
-Repeat with `Find my bank statement.` and
-`Convert the bank statement to hledger format.` Supply identifying information in
-the request if the discovered schema requires it. The agent asks for missing
-information in its final response; provide it on a new run.
+For a specific task, set the agent's `user_prompt` to a request such as
+`List my available bank statements.`, `Find my bank statement.`, or
+`Convert the bank statement to hledger format.` Supply identifying information
+if the discovered schema requires it. The agent asks for missing information in
+its final response; provide it on a new run.
 
 Validation from the `aetheris-agents/` root:
 

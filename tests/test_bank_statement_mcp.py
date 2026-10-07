@@ -24,7 +24,7 @@ def test_agent_uses_config_and_discovered_schemas_only():
     for name in ("bank_statement_list", "find_bank_statement", "bank_statement_to_hledger"):
         assert name not in source
     assert "run_command" not in source
-    assert "BANK_STATEMENT_REQUEST" in source
+    assert 'user_prompt: "Help me with my bank statements."' in source
 
 
 @pytest.fixture
@@ -133,14 +133,13 @@ def test_live_agent_flow(user_request, tool):
     alias Aetheris.CLI.Commands.RunHelpers
     :ok = RunHelpers.ensure_started()
     {{:ok, config}} = RunHelpers.load_agent_file({json.dumps(str(AGENT))})
-    config = %{{config | run_id: {json.dumps(run_id)}}}
+    config = %{{config | run_id: {json.dumps(run_id)}, user_prompt: {json.dumps(user_request)}}}
     {{:ok, id}} = Aetheris.start_run(config)
     {{:ok, _}} = RunHelpers.await_run(id, verbose: false)
     """
-    env = dict(os.environ, BANK_STATEMENT_REQUEST=user_request)
     result = subprocess.run(
         ["mix", "run", "--eval", script],
-        cwd=HARNESS, env=env, capture_output=True, text=True, timeout=180,
+        cwd=HARNESS, env=os.environ.copy(), capture_output=True, text=True, timeout=180,
     )
     assert result.returncode == 0, "agent run failed; inspect local harness logs"
     trajectory = json.loads((HARNESS / "priv" / "runs" / run_id / "trajectory.json").read_text())

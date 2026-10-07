@@ -5,7 +5,6 @@ mcp_servers = [server] |> Enum.reject(&is_nil/1)
 
 provider = System.get_env("AETHERIS_PROVIDER", "anthropic")
 model = System.get_env("AETHERIS_MODEL", "claude-haiku-4-5-20251001")
-request = System.get_env("BANK_STATEMENT_REQUEST", "List my available bank statements.")
 
 %Aetheris.RunConfig{
   run_id: "bank-statement-#{Aetheris.ID.generate()}",
@@ -35,5 +34,5 @@ request = System.get_env("BANK_STATEMENT_REQUEST", "List my available bank state
   If the server is disabled, tools are unavailable, or a tool fails, explain the
   limitation instead of claiming success. Never disclose authentication headers.
   """,
-  user_prompt: request
+  user_prompt: "Help me with my bank statements."
 }
