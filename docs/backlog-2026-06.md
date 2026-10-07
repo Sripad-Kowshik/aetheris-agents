@@ -123,16 +123,6 @@
 
 ---
 
-### BL-286 — a CORS preflight to the playground API is answered by the auth plug with 401, so no browser origin can call BL-284's route
-- state: open
-- type: missing capability
-- area: harness — API
-- priority: unset — the arbiter's · size: S _(proposed)_
-- evidence: docs/evidence/BL-286.md
-- done-when: OPTIONS from that origin returns 204 before auth, and a POST with no bearer still returns 401.
-
----
-
 
 ---
 

@@ -9907,3 +9907,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-285.md
 - done-when: the existing HTTP API section names AETHERIS_AGENTS_ROOT, the default, and that ct-bot/agents/main.exs is relative to it.
 - disposition: fixed
+
+---
+
+### BL-286 — a CORS preflight to the playground API is answered by the auth plug with 401, so no browser origin can call BL-284's route
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: unset — the arbiter's · size: S _(proposed)_
+- evidence: docs/evidence/BL-286.md
+- done-when: OPTIONS from that origin returns 204 before auth, and a POST with no bearer still returns 401.
+- disposition: fixed
