@@ -129,3 +129,36 @@ not terminal; the temp-file fallback stays the empty-`final_message`
 fallback on a finished hop. `max_steps` stays 12 — the missed result was
 a read defect, not a step deficit, and raising it would have hidden the
 miss.
+
+---
+
+## T7 follow-up 2 — the validate turn's echo contract (2026-10-06)
+
+**The contract, now named.** The panel patches its record flags only from
+a `buddy-enrol-workspace` surface echo carrying the same surface id and
+`records[].valid` plus `reasons`; a text summary does not patch, and a
+record missing from the echo is failed closed by the panel. The host's
+check (`buddy_validate` / `student.enrol.validate`) sends every workspace
+record — and the T7 wire said nothing about that turn, so a parent would
+have improvised (worst case: spawn the parse chain, or answer in text
+and never patch).
+
+**The rule appended to the wire section** (a new `## The validate turn
+(no spawn)` block, after the chain's compose/suggestions paragraph; the
+chain section and the role-body markers untouched): on a
+buddy_validate / `student.enrol.validate` turn the parent does NOT spawn
+— it answers directly with the surface echo: same surface id, records[]
+patched so every input record carries its verdict as `valid` plus
+`reasons`, exactly one verdict per input record, judged against the
+workspace field list the check carried, no record added, dropped, or
+edited beyond its verdict; an invalid record still appears with its
+reasons (a missing row is the panel's fail-closed, so omitting one does
+not hide it — it fails it). `activeRecordId` is focus only: carried
+through unchanged, never set by the parent. Nothing is saved and no save
+is claimed.
+
+The validate child (`validate.exs`) is unchanged and stays the
+standalone wrap — this turn does not spawn it; its rules live in its own
+source file and are not restated here. No T8 row; no backlog row; no
+harness edit. Live confirmation of the echo round-trip rides the same
+still-owed live re-run noted in the follow-up above.

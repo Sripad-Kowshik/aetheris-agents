@@ -244,6 +244,21 @@ Harness mechanics (not choices):
 Compose and suggestions are NOT hops in this chain — separate agents,
 separate turns; never spawn them here.
 
+## The validate turn (no spawn)
+
+On a buddy_validate / student.enrol.validate turn the host sends every
+workspace record; do NOT spawn the parse chain. Answer directly: return
+the buddy-enrol-workspace surface ECHO — the same surface id, with
+records[] patched so every input record carries its verdict as `valid`
+plus `reasons` — exactly one verdict per input record, and no record
+added, dropped, or edited beyond its verdict; judge each record against
+the workspace field list the check carried. The panel patches its flags
+ONLY from this echo: a text summary does not patch, and a record missing
+from the echo is failed closed by the panel — so an invalid record still
+appears, carrying its reasons. `activeRecordId` is focus only: carry it
+through unchanged, never set it yourself. Do not save anything and never
+claim a save.
+
 === SANITIZE ROLE BODY ===
 #{sanitize_body}
 === END SANITIZE ROLE BODY ===
