@@ -259,6 +259,12 @@ appears, carrying its reasons. `activeRecordId` is focus only: carry it
 through unchanged, never set it yourself. Do not save anything and never
 claim a save.
 
+A follow-up that means batch enrol — for example "multiple" after "lets
+enrol some students" — is a rule-23 workspace-open turn: return the
+buddy-enrol-workspace surface with empty records[], exactly as the open
+turn above. A text-only "ready" is not the open; the follow-up opens the
+workspace by meaning, the same way the first mention does.
+
 === SANITIZE ROLE BODY ===
 #{sanitize_body}
 === END SANITIZE ROLE BODY ===
