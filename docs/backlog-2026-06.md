@@ -123,6 +123,26 @@
 
 ---
 
+### BL-287 — no thread or owner field on runs: a host cannot keep a chat thread for an owner across machines
+- state: open
+- type: missing capability
+- area: harness — API
+- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
+- evidence: docs/evidence/BL-287.md
+- done-when: POST agent-file-runs with no thread field is today's 202. owner_id + thread_id stamps the run, still 202; a failed stamp still 202. GET lists that owner's threads; system_prompt never in the request. Design: docs/aetheris/backlog/bl-287
+
+---
+
+### BL-288 — the preflight allow-methods list refuses GET, so a browser cannot call any playground read route
+- state: open
+- type: missing capability
+- area: harness — API
+- priority: unset — the arbiter's · size: XS _(proposed)_
+- evidence: docs/evidence/BL-288.md
+- done-when: OPTIONS from an allowed origin with Access-Control-Request-Method GET returns 204 and Access-Control-Allow-Methods includes GET. A GET with no bearer still returns 401. Design: docs/aetheris/backlog/bl-288
+
+---
+
 
 ---
 
