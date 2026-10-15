@@ -123,16 +123,6 @@
 
 ---
 
-### BL-288 — the preflight allow-methods list refuses GET, so a browser cannot call any playground read route
-- state: open
-- type: missing capability
-- area: harness — API
-- priority: unset — the arbiter's · size: XS _(proposed)_
-- evidence: docs/evidence/BL-288.md
-- done-when: OPTIONS from an allowed origin with Access-Control-Request-Method GET returns 204 and Access-Control-Allow-Methods includes GET. A GET with no bearer still returns 401. Design: docs/aetheris/backlog/bl-288
-
----
-
 
 ---
 

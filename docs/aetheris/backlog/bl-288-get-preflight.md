@@ -1,6 +1,15 @@
 # BL-288 — Allow GET on the playground preflight (design brief)
 
-**Status:** T0 filed (this document). T1 not started.
+**Status:** closed 2026-10-06. T1 landed in the harness — `77cb0ab` ("BL-288
+T1: GET joins the playground preflight allow-methods") — with both
+done-when arms discharged and C4 discharged in the same commit
+(`playground-api.md`'s CORS block now names GET with its reason). One
+**C1-vs-scope note, not a deviation**: the commit message describes the
+reachability consequence (§3.4, the streams' fetch reads, §3.9) — the
+capability, restated; the contract text itself was amended in the same
+commit per C4. The closure record is appended in
+`docs/evidence/BL-288.md`, and the row is closed in the archive
+(`state: done`, `disposition: fixed`).
 **Type:** design brief. A contract for the implementation cc:prompt,
 cited by item number.
 **Date:** 2026-10-06
