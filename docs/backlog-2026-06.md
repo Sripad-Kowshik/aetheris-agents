@@ -123,6 +123,36 @@
 
 ---
 
+### BL-289 — a native-Windows first run times out in admission before the loop starts
+- state: open
+- type: missing capability
+- area: harness — admission / worker handshake
+- priority: medium _(proposed)_ · size: M _(proposed)_
+- evidence: docs/evidence/BL-289.md
+- done-when: agent-file-runs POST with only harness-managed tools still returns 202 inside the admission window on Windows, or the outer admission timeout is longer than the worker handshake and both are documented. Design: docs/aetheris/backlog/bl-289
+
+---
+
+### BL-290 — `mix compile` fails on Windows: `copy_binary/3` looks for `aetheris_worker`, cargo emits `aetheris_worker.exe`
+- state: open
+- type: defect
+- area: harness — compile worker mix task
+- priority: unset — the arbiter's · size: XS _(proposed)_
+- evidence: docs/evidence/BL-290.md
+- done-when: mix compile succeeds on Windows and the copied binary in priv/worker/ carries the .exe suffix. Design: docs/aetheris/backlog/bl-290
+
+---
+
+### BL-291 — the worker and its Rust children open a visible console window on Windows
+- state: open
+- type: missing capability
+- area: harness — worker ports (Windows console)
+- priority: unset — the arbiter's · size: S _(proposed)_
+- evidence: docs/evidence/BL-291.md
+- done-when: a run that starts the worker opens no visible console window on Windows; the worker still starts and the run proceeds. Design: docs/aetheris/backlog/bl-291
+
+---
+
 
 ---
 
