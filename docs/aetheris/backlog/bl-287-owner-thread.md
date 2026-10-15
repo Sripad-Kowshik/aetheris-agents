@@ -1,8 +1,16 @@
 # BL-287 — Owner-threaded runs (design brief)
 
-**Status:** T0 filed (this document). T1 not started.
-**Type:** design brief. A contract for the implementation cc:prompt, cited
-by item number.
+**Status:** closed 2026-10-06. T1 and T2 landed in the harness —
+`4dc1b5b` (optional owner_id/thread_id stamps on agent-file runs) and
+`91d6a85` (the `threads` store table, `POST /api/playground/threads`,
+and the two §3.9 reads) — with the four done-when arms discharged; the
+closure record is appended in `docs/evidence/BL-287.md`, and the row is
+closed in the archive (`state: done`, `disposition: fixed`). One
+**C1/C2 deviation, noted in the closure record**: T2 added
+`POST /api/playground/threads` (§3.8) — a third route this brief had
+left to T1's STOP list without naming it.
+**Type:** design brief. A contract for the implementation cc:prompt,
+cited by item number.
 **Date:** 2026-10-06
 **Row:** BL-287 (open, `docs/backlog-2026-06.md` §Harness).
 **Evidence:** `docs/evidence/BL-287.md` (the finding; cites the survey).

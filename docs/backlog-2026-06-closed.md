@@ -9918,3 +9918,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-286.md
 - done-when: OPTIONS from that origin returns 204 before auth, and a POST with no bearer still returns 401.
 - disposition: fixed
+
+---
+
+### BL-287 — no thread or owner field on runs: a host cannot keep a chat thread for an owner across machines
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
+- evidence: docs/evidence/BL-287.md
+- done-when: POST agent-file-runs with no thread field is today's 202. owner_id + thread_id stamps the run, still 202; a failed stamp still 202. GET lists that owner's threads; system_prompt never in the request. Design: docs/aetheris/backlog/bl-287
+- disposition: fixed
