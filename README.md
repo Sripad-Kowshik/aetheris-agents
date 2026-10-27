@@ -40,6 +40,7 @@ status the registry declares.
 | [`api/gateway/`](api/gateway/) | TAP protocol, gateway side — intent execution against ct.stu | ✅ T1–T4 |
 | [`boxy-pipeline/`](boxy-pipeline/) | Catalog and sales-order extraction; pure Python, no Aetheris agent | ⏸ dormant since 2026-08-16 |
 | [`ct-bot/`](ct-bot/) | CampusTrack panel agents — main, sanitize, parse, validate, compose, suggestions (chat path; not the TAP track, no ct-api) | 🚧 T1 — main agent landed; T2–T7 open |
+| [`ct-rpg/`](ct-rpg/) | CampusTrack migration gate agents — the extracted RavenDB→Postgres runbook driven as a gated agent chain (preflight → migrate → verify → api; stop on first failed gate) | 🚧 T1 — parent + gate-0 child landed; T2–T5 open |
 | [`cloudcost/`](cloudcost/) | Multi-provider cloud spend collection and reporting | ✅ |
 | [`docbuilder/`](docbuilder/) | Branded document generation — invoices, offer letters (PDF + DOCX) | ✅ |
 | [`eduloka/`](eduloka/) | Discovery milestone | ✅ |

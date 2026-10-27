@@ -1,0 +1,6 @@
+{
+  "manifest_version": "1",
+  "use_case": "ct-rpg",
+  "description": "RavenDB-to-Postgres migration gate agents — the gate scripts run in the migration repo's Docker containers; no local CLI scripts yet",
+  "scripts": []
+}

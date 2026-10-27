@@ -60,6 +60,7 @@ NON_PRODUCERS = {
     "api/gateway": "writes no local file",
     "api/tenant": "writes no local file",
     "ct-bot": "no agent file yet (T0); its scripts land with T2-T4",
+    "ct-rpg": "no producer scripts yet (T0+T1); the gate scripts run in the migration repo's containers",
     "drive": "fetches a remote file inbound; produces nothing of its own",
     "email": "fetches a remote file inbound; produces nothing of its own",
 }
