@@ -1,0 +1,82 @@
+{
+  "id": "etl_orchestrator",
+  "operation": "migration.etl-orchestrator",
+  "description": "Targeted run `migrate_all.py --module fees` from the repo root (or with the container's default env): the alias resolves to the fees module, the fees ETL child script runs to completion, post-migration SQL (view + triggers) is applied, the summary line is printed, and the process exits 0.",
+  "source": "authored-from-code",
+  "validated_against_legacy": false,
+  "sanitized": true,
+  "notes": "All expected strings, selection semantics, and exit codes are lifted verbatim from scripts/migrate_all.py; nothing hand-invented. Child-script data effects (rows loaded) and summary-JSON filenames are nondeterministic and asserted by rule. Capture against a live legacy run (reachable RavenDB + PostgreSQL + .env + cert) to set validated_against_legacy=true.",
+
+  "given": {
+    "environment": {
+      "working_directory": "repository root (migrate_all.py run as `python scripts/migrate_all.py --module fees`)",
+      "env_precedence": "no PG_*/RAVEN_* variables pre-set in the host environment (so .env values apply)"
+    },
+    "config": {
+      "env_file": ".env at repo root with PG_HOST, PG_PORT, PG_DB, PG_USER, PG_PASSWORD, RAVEN_URL, RAVEN_DB, RAVEN_CERT_FILE set (values synthesized)",
+      "PG_DB": "rpg",
+      "RAVEN_URL": "https://<reachable-cluster>.ravendb.cloud (synthesized)",
+      "RAVEN_DB": "BTL (synthesized)"
+    },
+    "files": {
+      "child_script_present": "scripts/migrations/fees_ravendb_to_postgres_migrate.py",
+      "sql_dir": "student-fee-poc/sql/ containing 01_student_fee_view.sql and 02_trigger.sql (first existing candidate path)",
+      "postgres_target": "empty or partially populated database reachable at PG_* settings"
+    },
+    "args": ["--module", "fees"]
+  },
+
+  "expect": {
+    "selection": {
+      "stdout_first_line": "[*] Queued migration modules: fees",
+      "note": "alias table not needed for 'fees' (exact registry name); normalization lowercases input"
+    },
+    "execution": {
+      "child_banner_lines": [
+        "[*] Starting Migration: fees_ravendb_to_postgres_migrate.py"
+      ],
+      "child_success_line": "[+] Success: fees_ravendb_to_postgres_migrate.py completed successfully.",
+      "child_invocation": "subprocess.run([sys.executable, '<scripts_dir>/migrations/fees_ravendb_to_postgres_migrate.py']) — blocking, sequential, no other module banners present",
+      "forwarded_args": []
+    },
+    "post_migration_sql": {
+      "applied": true,
+      "banner": "[*] Applying Post-Migration Views, Indexes & Triggers",
+      "per_file_lines": [
+        "Applying SQL: 01_student_fee_view.sql...",
+        "[+] Applied 01_student_fee_view.sql successfully.",
+        "Applying SQL: 02_trigger.sql...",
+        "[+] Applied 02_trigger.sql successfully."
+      ],
+      "connection": "psycopg2 autocommit using PG_HOST/PG_PORT/PG_DB/PG_USER/PG_PASSWORD from resolved env"
+    },
+    "summary": {
+      "stdout_line": "[=] MIGRATION SUMMARY: 1 succeeded, 0 failed"
+    },
+    "exit_code": 0,
+    "side_effects": {
+      "postgres": {
+        "tables_created": ["fee", "fee_transaction"],
+        "note": "exact rows loaded depend on live RavenDB contents — assert by count > 0 at capture time, not by literal",
+        "views_created": ["student_fee_summary_view"],
+        "triggers_created": ["trg_student_modified_on", "trg_fee_modified_on", "trg_fee_transaction_modified_on", "trg_fee_transaction_audit"]
+      },
+      "artifacts": {
+        "child_summary_json": "validation/migration-summary-<timestamp>.json written by the child (orchestrator neither reads nor aggregates it)",
+        "orchestrator_writes_no_files": true
+      }
+    }
+  },
+
+  "assert_rules": {
+    "nondeterministic_fields": [
+      "row counts loaded from RavenDB (live data; assert count > 0 per table at capture)",
+      "child summary JSON filename timestamp",
+      "any timestamps printed inside child output"
+    ],
+    "known_unstated": [
+      "child stdout details (paging progress, transform logs) belong to the child ETL extraction, not the orchestrator golden",
+      "divergent cases (unknown module name, post-SQL exception, partial failure, typo'd flags) are reified as open items in specs/migration/etl-orchestrator.md and deliberately not encoded as passing expectations"
+    ]
+  }
+}

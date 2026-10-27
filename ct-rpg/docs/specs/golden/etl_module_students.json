@@ -1,0 +1,213 @@
+{
+  "id": "etl_module_students",
+  "operation": "migration.etl-module-students",
+  "description": "Happy path: the students module reads Orgs, Institutes, and Students from RavenDB, creates the target schema, and upserts 1 organization + 1 institute + 1 student (single enrollment with a resolvable institute) inside one transaction; prints the verbatim progress/summary lines, writes the migration summary JSON, and exits 0.",
+  "source": "authored-from-code",
+  "validated_against_legacy": false,
+  "sanitized": true,
+  "notes": "All expected strings, identity precedence chains, enum mappings, and the summary shape are lifted verbatim from students_ravendb_to_postgres_migrate.py - nothing hand-invented. PII (names, Aadhaar, UDID, PAN, contacts, photo URL) is synthesized per the adapter. Nondeterministic values (timestamps, summary filename, new-vs-updated split on re-runs) are asserted by rule. Capture against a live legacy run (reachable RavenDB + PostgreSQL + .env + .pfx cert) to set validated_against_legacy=true.",
+
+  "given": {
+    "environment": {
+      "working_directory": "repository root (script run directly: python scripts/migrations/students_ravendb_to_postgres_migrate.py, or as the `students` child of migrate_all.py)",
+      "env_precedence": "no RAVEN_*/PG_* variables pre-set in the host environment (so .env values apply)"
+    },
+    "config": {
+      "RAVEN_URL": "https://<reachable-cluster>.ravendb.cloud (synthesized)",
+      "RAVEN_DB": "BTL (synthesized)",
+      "RAVEN_CERT_FILE": "scripts/certs/test-client-cert.pfx (synthetic fixture, exists on disk)",
+      "RAVEN_CERT_PASSWORD": "(empty)",
+      "ORG_COLLECTION": "Orgs",
+      "INSTITUTE_COLLECTION": "Institutes",
+      "STUDENT_COLLECTION": "Students",
+      "PAGE_SIZE": "500",
+      "TIMEOUT_SEC": "30",
+      "PG_HOST": "localhost",
+      "PG_PORT": "15432",
+      "PG_DB": "rpg",
+      "PG_USER": "postgres",
+      "PG_PASSWORD": "(synthesized)"
+    },
+    "postgres_state": "database reachable; the three target tables do not exist yet (clean first run)",
+    "raven_documents": {
+      "Orgs": [
+        {
+          "SourceOrgId": "org-demo-00000000-0000-0000-0000-0000000000a1",
+          "Name": "Test Org One",
+          "ShortName": "TO1",
+          "Status": "Active",
+          "EduLevel": "School",
+          "IsGroup": false,
+          "IsRoot": true,
+          "Modules": ["Students", "Fees"],
+          "EnableSMS": true,
+          "EnableEmail": true,
+          "EnableNotification": false,
+          "CreatedOn": "2024-04-01T00:00:00.0000000Z",
+          "CreatedBy": "00000000-0000-0000-0000-0000000000f1",
+          "@metadata": { "@id": "Orgs/00000000-0000-0000-0000-0000000000a1" }
+        }
+      ],
+      "Institutes": [
+        {
+          "SourceInstId": "inst-demo-00000000-0000-0000-0000-0000000000b1",
+          "Name": "Test Institute One",
+          "ShortName": "TInstOne",
+          "Status": 1,
+          "InstituteCode": "TIO-01",
+          "AcademicYearFrom": "2024-06-01T00:00:00.0000000Z",
+          "AcademicYearTo": "2025-03-31T00:00:00.0000000Z",
+          "EduLevel": "School",
+          "CreatedOn": "2024-04-01T00:00:00.0000000Z",
+          "@metadata": { "@id": "Institutes/00000000-0000-0000-0000-0000000000b1" }
+        }
+      ],
+      "Students": [
+        {
+          "SourceStudentId": "24T001",
+          "Name": "Test Student One",
+          "FirstName": "Test",
+          "LastName": "Student One",
+          "Gender": "Male",
+          "DOB": "2008-05-14T00:00:00.0000000Z",
+          "Email": "test.student.one@example.com",
+          "Mobile": "9999990001",
+          "EmailCSV": "test.student.one@example.com,parent.one@example.com",
+          "MobileCSV": "9999990001,9999990002",
+          "Status": 1,
+          "UserId": "00000000-0000-0000-0000-0000000000e1",
+          "Father": { "Name": "Test Father One", "Mobile": "9999990002" },
+          "Mother": { "Name": "Test Mother One", "Mobile": "9999990003" },
+          "AadharNumber": "999999999901",
+          "Attendance": { "PresentDays": 180, "TotalDays": 200 },
+          "FeesReceivable": { "Outstanding": 0 },
+          "Enrollments": [
+            {
+              "InstId": "inst-demo-00000000-0000-0000-0000-0000000000b1",
+              "CourseName": "Test Course I",
+              "TermName": "2024-25",
+              "SectionName": "A",
+              "RollNo": "12",
+              "StudentId": "24T001"
+            }
+          ],
+          "CreatedOn": "2024-04-02T00:00:00.0000000Z",
+          "CreatedBy": "00000000-0000-0000-0000-0000000000f1",
+          "@metadata": { "@id": "Students/00000000-0000-0000-0000-0000000000c1" }
+        }
+      ]
+    }
+  },
+
+  "expect": {
+    "exit_code": 0,
+    "stdout_lines": [
+      "RavenDB target: url=https://<reachable-cluster>.ravendb.cloud, db=BTL, collections=(Orgs, Institutes, Students)",
+      "[1/5] Fetching RavenDB documents...",
+      "Fetched orgs=1, institutes=1, students=1",
+      "[2/5] Connecting PostgreSQL...",
+      "[3/6] Ensuring target schema...",
+      "[4/6] Upserting organizations...",
+      "[5/6] Upserting institutes...",
+      "[6/6] Upserting students and enrollments...",
+      "Migration completed.",
+      "organizations_processed: 1",
+      "new_organizations_inserted: 1",
+      "institutes_processed: 1",
+      "new_institutes_inserted: 1",
+      "students_processed: 1",
+      "new_students_inserted: 1",
+      "Summary JSON written: <absolute-path>"
+    ],
+    "stdout_assert_rules": {
+      "banner_numbering": "mixed denominators [1/5],[2/5] then [3/6]..[6/6] are legacy-verbatim (cosmetic divergence, see spec open item 10)",
+      "summary_json_path": "matches ^validation/migration-summary-\\d{8}_\\d{6}\\.json$ resolved to an absolute path"
+    },
+    "postgres": {
+      "schema": {
+        "enum_types_created": [
+          "organization_status_enum",
+          "institute_status_enum",
+          "edu_level_enum",
+          "student_gender_enum",
+          "student_status_enum"
+        ],
+        "tables_created": ["organization", "institute", "student"]
+      },
+      "organization_row": {
+        "id": "00000000-0000-0000-0000-0000000000a1",
+        "name": "Test Org One",
+        "short_name": "TO1",
+        "status": "Active",
+        "edu_level": "School",
+        "is_root": true,
+        "note": "id derived from FIRST uuid in SourceOrgId string, lowercased (source-field precedence, not metadata)"
+      },
+      "institute_row": {
+        "id": "00000000-0000-0000-0000-0000000000b1",
+        "name": "Test Institute One",
+        "short_name": "TInstOn",
+        "short_name_assert_rule": "truncated to 6 characters ('TInstOne' -> 'TInstOn')",
+        "status": "Active",
+        "note": "numeric status 1 maps through inst_status/parse_institute_status to enum 'Active'"
+      },
+      "student_row": {
+        "id": "00000000-0000-0000-0000-0000000000c1",
+        "id_assert_rule": "derived from @metadata.@id UUID FIRST (student-only precedence), lowercased",
+        "student_id": "24T001",
+        "inst_id": "00000000-0000-0000-0000-0000000000b1",
+        "inst_id_assert_rule": "resolved because the institute row was loaded in the same transaction before students",
+        "name": "Test Student One",
+        "gender": "Male",
+        "status": "Active",
+        "father_name": "Test Father One",
+        "mother_name": "Test Mother One",
+        "email_csv": "test.student.one@example.com,parent.one@example.com",
+        "aadhar_number": "999999999901",
+        "enrollments": {
+          "shape": "JSONB array of 1 element with CourseName/TermName/SectionName/RollNo/StudentId/InstId preserved verbatim from the source document"
+        },
+        "fees_receivable": { "shape": "JSONB object copied verbatim (boundary re-homing: fees-context blob, see spec open item 5)" },
+        "attendance": { "shape": "JSONB object copied verbatim (boundary re-homing: academics-context blob, see spec open item 5)" }
+      }
+    },
+    "summary_json": {
+      "path_matches": "^validation/migration-summary-\\d{8}_\\d{6}\\.json$",
+      "top_level_keys": ["generated_at_utc", "source", "target", "run_stats", "post_load_counts", "api_payload_validation"],
+      "run_stats": {
+        "organizations_processed": 1,
+        "new_organizations_inserted": 1,
+        "institutes_processed": 1,
+        "new_institutes_inserted": 1,
+        "students_processed": 1,
+        "new_students_inserted": 1
+      },
+      "post_load_counts": { "organization": 1, "institute": 1, "student": 1 },
+      "generated_at_utc_assert_rule": "ISO-8601 ending in Z; do not assert literally",
+      "api_payload_validation": {
+        "present_because": "default (no --no-api-payload-validation)",
+        "endpoints": [
+          "studentManage",
+          "coursewiseBreakup",
+          "sectionwiseBreakup",
+          "studentParentDetails",
+          "newAdmissions",
+          "studentDetails",
+          "dashboardSummary"
+        ],
+        "baseline_assert_rule": "baseline filters hard-coded to courseName='I', section='A', term='Annual' - on this synthetic dataset Data arrays are expected EMPTY while the run still succeeds (see spec open item 8)"
+      }
+    }
+  },
+
+  "assert_rules": {
+    "nondeterministic_fields": [
+      "generated_at_utc timestamp",
+      "summary JSON filename timestamp",
+      "on re-run (same input twice): run_stats processed counts stay 1 but new_*_inserted become 0 (upsert updates in place, full-row overwrite incl. created_on - see spec open item 7)"
+    ],
+    "known_unstated": [
+      "divergent cases (unparseable status, PK-less document, missing enrollment institute, live-source mutation between pages) are reified as open items in specs/migration/etl-module-students.md and deliberately not encoded as passing expectations"
+    ]
+  }
+}

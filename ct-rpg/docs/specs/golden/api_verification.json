@@ -1,0 +1,101 @@
+{
+  "id": "api_verification",
+  "operation": "migration.api-verification",
+  "description": "Runbook gate 4 happy path against the parity API serving the migrated dataset: /health 200; GET /api/stu/student?limit=2 -> 200 {\"data\":[...]} envelope; GET /api/feeTx?limit=2 -> 200 {\"data\":[...]} newest-first; POST /api/feeTx with the gate's demo body -> 201 Created with Location header, TXN-<utc-ms> txNo, and the fixed success message; the inserted row is then readable back through GET /api/feeTx.",
+  "source": "authored-from-code",
+  "validated_against_legacy": false,
+  "sanitized": true,
+  "notes": "Response shapes, defaults, status-code mapping, and messages are lifted verbatim from the .NET sources (Program.cs, StudentQueries.cs, FeeTransactionQueries.cs, FeeTransactionWriteQueries.cs, FeeTransactionApiResponse.cs); gate commands and the demo POST body are lifted verbatim from agent_runbook.md Step 4 - nothing hand-invented. PII synthesized; the dataset referenced is the synthetic etl_module_students fixture (ids ending a1/b1/c1) plus a synthetic fee - the gate's demo UUIDs are captured verbatim but only resolve on the demo dataset (see spec open item 2/known_unstated). Nondeterministic values (ids, txNo, timestamps) asserted by rule. Capture against a live legacy run to set validated_against_legacy=true.",
+
+  "given": {
+    "environment": {
+      "services": "rpg-postgres healthy, rpg-api running (gate 1 passed); Swagger UI at root",
+      "base_url": "http://localhost:5000 (hard-coded by the gate commands)"
+    },
+    "dataset": {
+      "note": "the migrated synthetic fixture: organization/institute/student ids 00000000-0000-0000-0000-0000000000a1/b1/c1 plus fee id 00000000-0000-0000-0000-0000000000d1 named 'Test Fee One' with display_text",
+      "student": { "id": "00000000-0000-0000-0000-0000000000c1", "studentId": "24T001", "name": "Test Student One", "status": "Active", "enrollments": [{ "CourseName": "Test Course I", "TermName": "2024-25", "SectionName": "A", "RollNo": "12" }] },
+      "fee": { "id": "00000000-0000-0000-0000-0000000000d1", "name": "Test Fee One", "displayText": "Test Fee One (Annual)" }
+    },
+    "gate_commands": {
+      "health": "curl -s -f http://localhost:5000/health",
+      "read_students": "curl -s -f \"http://localhost:5000/api/stu/student?limit=2\"",
+      "read_fee_tx": "curl -s -f \"http://localhost:5000/api/feeTx?limit=2\"",
+      "write_fee_tx": "curl -s -f -X POST \"http://localhost:5000/api/feeTx\" -H \"Content-Type: application/json\" -d '{\"studentId\": \"cc93c106-82ea-4610-9873-3db87f1307c6\", \"amount\": 500.00, \"status\": \"Active\", \"feeId\": \"a7e2851c-2321-4adc-993a-387deefee3a8\", \"refNo\": \"AGENT-DEMO-01\"}'",
+      "body_note": "demo UUIDs captured verbatim from agent_runbook.md; they are NOT the synthetic fixture's ids - on the fixture dataset they dangle silently (no FK) and the gate still passes; see spec open items 2-3"
+    }
+  },
+
+  "expect": {
+    "health": {
+      "http_status": 200,
+      "body": { "status": "Healthy", "database": "Connected" },
+      "assert_rules": { "timestamp": "non-empty UTC datetime; do not assert literally" }
+    },
+    "read_students": {
+      "http_status": 200,
+      "body_shape": { "data": "array of student objects (length 1 on the fixture dataset; <= limit)" },
+      "student_fields": ["id", "name", "dob", "gender", "email", "mobile", "parentEmails", "parentMobiles", "father", "mother", "guardian", "address", "photoURL", "instId", "studentId", "status", "statusAsString", "courseId", "courseSortIndex", "courseName", "branch", "termName", "sectionName", "rollNo", "doa", "admissionNo", "applicationNo", "aadharNumber", "marksCardTemplate", "attendance", "attendanceList", "tags", "virtualId", "domicile", "iep"],
+      "student_assert_rules": {
+        "keys_camel_cased": "all keys camelCase; special cases preserved: photoURL (URL uppercase), instId/studentId/courseId/virtualId (Id), dob/doa lowercase, pan lowercase",
+        "status": "1 (Active->1 mapping) alongside statusAsString 'Active'",
+        "synthetic_defaults": "domicile.country 'India' when source domicile absent; attendance 'Present' when source attendance lacks Status; attendanceList 8x'Present' when absent; doa '0001-01-01T00:00:00' when enrollment lacks DOA; rollNo 0 when no RollNo/RollNoAsInt",
+        "first_enrollment_only": "courseName/termName/sectionName/rollNo come from enrollments[0] exclusively (LATERAL LIMIT 1) - fixture student has exactly one enrollment",
+        "parent_emails": "parentEmails is a 3-element array [fatherEmail, motherEmail, guardianEmail] with '' for absent entries"
+      }
+    },
+    "read_fee_tx_before_write": {
+      "http_status": 200,
+      "body_shape": { "data": "array, possibly empty on a fresh fixture (no migrated transactions); length <= limit" },
+      "tx_fields_when_present": ["id", "ownerId", "parentId", "txNo", "txDate", "studentId", "studentName", "courseId", "courseName", "section", "amount", "installmentsPaid", "finesPaid", "discounts", "feeAdjustment", "isFinePaid", "isDiscountGiven", "isOpeningBalanceAdjusted", "status", "refNo", "paidBy"]
+    },
+    "write_fee_tx": {
+      "http_status": 201,
+      "location_header_matches": "^/api/feeTx\\?id=[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+      "body": {
+        "studentId": "cc93c106-82ea-4610-9873-3db87f1307c6",
+        "amount": 500.0,
+        "status": "Active",
+        "message": "Fee transaction inserted successfully."
+      },
+      "body_assert_rules": {
+        "id": "fresh UUID (Guid.NewGuid()); do not assert literally; equals the Location query id",
+        "txNo": "matches ^TXN-\\d{17}$ (TXN-<yyyyMMddHHmmssfff> UTC, millisecond precision); do not assert literally; NOTE no unique constraint -> same-ms collisions possible (spec open item)",
+        "txDate": "UTC datetime close to capture time; do not assert literally",
+        "echoes": "studentId and amount echo the request body verbatim"
+      },
+      "side_effects": {
+        "row_persisted": "fee_transaction row with id/tx_no/tx_date/student_id/amount/status='Active' (fee_tx_status_enum)/ref_no='AGENT-DEMO-01'/installments_paid=[{FeeId, Amount:500, DueDate:<now no fraction>}]",
+        "dangling_reference_allowed": "studentId/feeId need not exist in the dataset (no FK on student_id; feeId only embedded in JSONB) - see spec open item 2",
+        "synthetic_installment": "installments_paid is exactly ONE fabricated installment regardless of the fee's real plan (spec open item 5)",
+        "audit_trigger": "trg_fee_transaction_audit inserts a fee_transaction_audit row (NOT asserted by this curl gate; asserted by xUnit DbWriteTests in runbook gate 5)"
+      }
+    },
+    "read_fee_tx_after_write": {
+      "http_status": 200,
+      "body_assert_rules": {
+        "newest_first": "data[0] is the just-created row (ORDER BY tx_date DESC NULLS LAST, tx_no DESC)",
+        "echoed_fields": "data[0].refNo 'AGENT-DEMO-01', amount 500.0, status 1 (Active->1), paidBy null (body omitted paidBy), txNo/txDate match the 201 body",
+        "enrichment_defaults": "installmentsPaid[0].dueDate has fractional seconds stripped; feeAdjustment defaults to {id: empty-guid, name:'Adj Fee', description:'Extra Amount', amount:0} since the write forces fee_adjustment to {}",
+        "student_enrichment": "studentName/courseId/courseName/section resolve from the matched student's first enrollment; on the demo UUID dataset these resolve to empty strings/null (student id dangles)"
+      }
+    },
+    "gate_verdict": {
+      "criterion": "all three curls exit 0 (curl -f: HTTP >= 400 would fail the gate); health 200 + reads 200 + write 201 satisfy the runbook gate-4 criteria",
+      "caveat": "the 'valid JSON array returned' criterion is satisfied only under the interpretation 'JSON containing an array' - literal bare-array check would fail (spec open item 1)"
+    }
+  },
+
+  "assert_rules": {
+    "nondeterministic_fields": [
+      "health timestamp",
+      "created transaction id / txNo / txDate (fresh GUID + UTC-ms timestamp per request)",
+      "order-independent reads: on multi-row datasets, GET limit=2 truncates to the 2 newest"
+    ],
+    "known_unstated": [
+      "the demo UUIDs in the POST body resolve only on the original demo dataset; on any other dataset they dangle silently and the gate still passes (reified in specs/migration/runbook-gates.md open item 3 and this spec's open item 2) - deliberately not encoded as a failing expectation",
+      "GET /api/fee is part of the API surface (README) but not part of the gate-4 curl contract; not exercised by this fixture",
+      "todaysAbsenteesOnly no-op behaviour is reified as an open item, not encoded here"
+    ]
+  }
+}
