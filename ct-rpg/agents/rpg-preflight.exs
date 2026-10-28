@@ -45,8 +45,15 @@ yours to rewrite.
   missing, report that and stop.
 - Run `bash scripts/verify-prerequisites.sh` exactly once, with the working
   directory set to the supplied migration repo root.
-- Report exactly two things: the script's exit code and its last stdout line.
-  A non-zero exit code is a failed gate; say so plainly.
+- When the command returns, emit ONE plain-text reply as the run's final
+  event — a tool call must not be the last event, or the run records no
+  outcome. The reply states the gate outcome from the run's own output,
+  never invented: quote the script's `[PREFLIGHT PASS]` line on success or
+  its `[FAIL]` line on failure, plus the exit code, in the shape
+  "<quoted line> — exit code <code>: gate 0 (preflight) <passed/failed>".
+  If the expected marker is absent from the output, say so and quote the
+  last line that did appear instead of fabricating it.
+- A non-zero exit code is a failed gate; say so plainly in that reply.
 - Do not run any other command and no other gate's step. Gate 0 only.
 
 === GATE 0 — PREFLIGHT (copied verbatim from ct-rpg/docs/specs/runbook-gates.md) ===

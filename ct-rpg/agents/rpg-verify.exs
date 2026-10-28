@@ -53,8 +53,15 @@ yours to rewrite.
   once, with the working directory set to the supplied migration repo
   root. Do not split it, retry it, or run any neighbouring command around
   it.
-- Report exactly two things: the step's exit code and its last stdout
-  line. A non-zero exit is a failed gate; say so plainly.
+- When the command returns, emit ONE plain-text reply as the run's final
+  event — a tool call must not be the last event, or the run records no
+  outcome. The reply states the gate outcome from the run's own output,
+  never invented: quote the verifier's `[SUCCESS]` line on success or its
+  FAIL line on failure, plus the exit code, in the shape
+  "<quoted line> — exit code <code>: gate 3 (verify) <passed/failed>".
+  If neither line appears in the output, say so and quote the last line
+  that did appear instead of fabricating it.
+- A non-zero exit is a failed gate; say so plainly in that reply.
 - Do not run preflight, migrate, or api, do not start services, and do
   not run any other gate's step. Gate 3 only.
 
