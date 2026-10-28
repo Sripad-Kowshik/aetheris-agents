@@ -9,13 +9,19 @@
 # stay verbatim. Every rule is kept; nothing is restated, summarised, or
 # softened.
 #
-# After the copy comes the WIRE section — this file's own words, clearly
-# marked as not part of the spec. It is the only place behaviour is added:
-# spawn one child at a time, in order — gate 0 preflight, then gate 2
-# migrate, then gate 3 verify (parity), then gate 4 api — wait for each,
-# read final_message, and stop on the first failed gate, reporting which
-# gate failed and that the rest did not run. The channel is the child's
-# final_message; spawn_agent + wait_for_all is the whole mechanism.
+# T6 — the wire. The WIRE section after the copy is this file's own words:
+# four hops in order — gate 0 preflight, then gate 2 migrate, then gate 3
+# verify (parity), then gate 4 api — ONE at a time: spawn a hop, wait for it,
+# read its final_message, then spawn the next. A hop whose wait reports a
+# non-terminal status is a failed chain: report which hop failed and stop; do
+# not retry and do not spawn the rest. A hop that finishes and reports its
+# gate FAILED does the same. Each hop's task_prompt carries exactly two
+# things — that child's role body (the marked gate section from the child's
+# own system_prompt, extracted at eval time below, fail-fast if a wrap or a
+# marker pair is missing) and the migration repo root parameter, passed
+# through exactly as the user prompt carried it. The parent does not restate
+# the gate rules; it only hands the child its role and the parameter. This
+# decision discharges the "spawn not decided" note carried by T3, T4, and T5.
 
 agent_root = Path.expand(Path.join(Path.dirname(__ENV__.file), ".."))
 
@@ -23,6 +29,35 @@ run_id = "ct-rpg-main-#{Aetheris.ID.generate()}"
 
 model    = System.get_env("CT_RPG_MODEL") || System.get_env("AETHERIS_MODEL") || "claude-haiku-4-5-20251001"
 provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
+
+# T6: the four child role bodies, extracted at eval time from the marked gate
+# sections inside each child's own system_prompt (the at1cmd skill-hint
+# pattern, as in ct-bot's T7 wire). Fail fast at eval time if a wrap or a
+# marker pair is missing. The parent does not restate the gate rules — the
+# blocks embedded in the wire below ARE the children's own marked copies.
+gate_body = fn root, file, gate ->
+  path = Path.join([root, "agents", file])
+  text = if File.exists?(path), do: File.read!(path), else: raise("missing ct-rpg child wrap: #{path}")
+
+  start_marker = "=== GATE #{gate} — "
+  end_marker = "=== END GATE #{gate} — "
+
+  case String.split(text, start_marker) do
+    [_before, after_start] ->
+      case String.split(after_start, end_marker) do
+        [body, _after_end] -> String.trim(body)
+        _ -> raise("unpaired end marker in #{path}")
+      end
+
+    _ ->
+      raise("unpaired gate marker in #{path}")
+  end
+end
+
+preflight_body = gate_body.(agent_root, "rpg-preflight.exs", "0")
+migrate_body   = gate_body.(agent_root, "rpg-migrate.exs", "2")
+verify_body    = gate_body.(agent_root, "rpg-verify.exs", "3")
+api_body       = gate_body.(agent_root, "rpg-api.exs", "4")
 
 %Aetheris.RunConfig{
   run_id:           run_id,
@@ -207,49 +242,77 @@ WIRE — the gate chain (this file's own words; NOT part of the spec)
 The document above is the gate contract: the rules, not yours to rewrite. On
 the turn below you run the gate chain through child agents.
 
-Four children, ONE at a time, in this order — gate 0 preflight, then gate 2
-migrate, then gate 3 verify (parity), then gate 4 api. Spawn a child, wait
-for it, read its result, then spawn the next. Never spawn children in
-parallel, never spawn the next before the previous one has been read.
+Four hops, ONE at a time, in this exact order:
+
+  hop 1 — gate 0 preflight
+  hop 2 — gate 2 migrate
+  hop 3 — gate 3 verify (parity)
+  hop 4 — gate 4 api
+
+Spawn a hop, wait for it, read its result, then spawn the next. Never spawn
+in parallel; never spawn the next hop until the previous one has finished.
 
 Harness mechanics (not choices):
-- spawn_agent arguments are task_prompt, tools, max_steps, timeout_ms — there
-  is no payload field. task_prompt becomes the child's system_prompt; put the
-  child's role text AND its parameters in task_prompt.
-- wait_for_all returns one map per run: run_id, status, final_message, steps.
-  final_message is the channel — the child's last text. Wait after each spawn
-  with run_ids = [that child's run_id] and timeout_ms: 120000, passed
-  explicitly. A child whose status is terminal is FINISHED: read
-  final_message and continue the chain — a finished child must never be
-  reported as timed out. Report a timeout only when wait_for_all reports the
-  run timed out AND the run's status is not terminal.
+- spawn_agent arguments are task_prompt, tools, max_steps, timeout_ms —
+  there is no payload field. task_prompt becomes the child's system_prompt;
+  put the child's role body AND its parameter in task_prompt.
+- spawn_agent does not load the standalone wraps in ct-rpg/agents/ — the
+  role bodies travel inside this prompt and are copied into each
+  task_prompt from the marked blocks below (the ct-bot T7 finding).
+- wait_for_all returns one map per run: run_id, status, final_message,
+  steps. final_message is the channel — the hop's last text. Wait after
+  each spawn with run_ids = [that hop's run_id] and timeout_ms: 120000,
+  passed explicitly.
+- A hop whose wait reports a TERMINAL status (for example "done") is
+  finished: read final_message and continue the chain — a finished hop is
+  never reported as timed out.
+- A hop whose wait reports a NON-TERMINAL status is a FAILED CHAIN: report
+  which hop failed and that the rest did not run, and stop. Do not retry.
+  Do not spawn the next hop.
 
-Stop-on-first-failure (the spec's own execution rule, applied to the chain):
-after each wait, read final_message. If the child reports its gate FAILED —
-a non-zero exit code, a [FAIL] / error line, or an explicit failure report —
-STOP. Report which gate failed and that the remaining children did not run.
-Do not spawn the rest. Do not retry.
+A failed hop stops the chain — the spec's own stop-on-first-failure rule,
+applied to the spawn order. After each wait, read final_message: if the
+hop reports its gate FAILED — a non-zero exit code, a [FAIL] / error
+line, or an explicit failure report — report which hop failed and that
+the remaining hops did not run, and stop. Do not retry. Do not spawn the
+rest.
 
-Child role texts, copied into each task_prompt from the document above:
-- Gate 0 (preflight): the `% --- gate 0: preflight ---` KB block from §1 plus
-  the three preflight Q&A entries from §2, verbatim, plus this invocation
-  contract: the migration repo root arrives as a parameter in the user
-  prompt — pass it through in the task_prompt, never hard-code a path; the
-  child runs `bash scripts/verify-prerequisites.sh` once from that root and
-  reports its exit code and last stdout line. (The standalone wrap is
-  ct-rpg/agents/rpg-preflight.exs; spawn_agent does not load standalone
-  wraps — the role text travels in task_prompt.)
-- Gate 2 (migrate): the `% --- gate 2: migration ---` KB block from §1. Its
-  standalone wrap lands at T3 (ct-rpg/milestone.md).
-- Gate 3 (verify): the `% --- gate 3: parity ---` KB block from §1. Its wrap
-  lands at T4.
-- Gate 4 (api): the `% --- gate 4: api ---` KB block from §1. Its wrap lands
-  at T5.
+Each hop's task_prompt is exactly two things — that child's role body and
+the parameter. You do not restate the gate rules; you only hand the child
+its role and the parameter:
 
-Until the T3–T5 wraps land, reaching one of those gates means the chain
-stops there: report which gate is next, that its child does not exist yet,
-and stop. Gates 1 (services) and 5 (tests) have no child in this milestone's
-ticket list; the same rule applies if the chain reaches them.
+- The role body: the child's marked gate section, copied VERBATIM from the
+  correspondingly named marked block below. These blocks were extracted at
+  eval time from each child's own system_prompt — they are the children's
+  own copies of the spec's gate sections, not yours to edit.
+- The parameter: one line, exactly as the child already expects it —
+  "Migration repo root: <the value from the user prompt>". Never invent,
+  substitute, or hard-code a path; if the user prompt carries no value,
+  report that and run no hop.
+
+  hop 1 (preflight) → the PREFLIGHT ROLE BODY block below
+  hop 2 (migrate)   → the MIGRATE ROLE BODY block below
+  hop 3 (verify)    → the VERIFY ROLE BODY block below
+  hop 4 (api)       → the API ROLE BODY block below
+
+The chain is exactly these four hops — gates 1 (services) and 5 (tests)
+have no child in this milestone's ticket list and are not hops.
+
+=== PREFLIGHT ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-preflight.exs's marked gate section) ===
+#{preflight_body}
+=== END PREFLIGHT ROLE BODY ===
+
+=== MIGRATE ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-migrate.exs's marked gate section) ===
+#{migrate_body}
+=== END MIGRATE ROLE BODY ===
+
+=== VERIFY ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-verify.exs's marked gate section) ===
+#{verify_body}
+=== END VERIFY ROLE BODY ===
+
+=== API ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-api.exs's marked gate section) ===
+#{api_body}
+=== END API ROLE BODY ===
 """,
-  user_prompt:      "T1 fixture turn — not a live run. Parameter: migration repo root = <MIGRATION_REPO_ROOT>. Begin."
+  user_prompt:      "T6 fixture turn — not a live run. Parameter: migration repo root = <MIGRATION_REPO_ROOT>. Begin."
 }
