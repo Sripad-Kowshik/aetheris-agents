@@ -16,12 +16,22 @@
 # non-terminal status is a failed chain: report which hop failed and stop; do
 # not retry and do not spawn the rest. A hop that finishes and reports its
 # gate FAILED does the same. Each hop's task_prompt carries exactly two
-# things — that child's role body (the marked gate section from the child's
-# own system_prompt, extracted at eval time below, fail-fast if a wrap or a
-# marker pair is missing) and the migration repo root parameter, passed
-# through exactly as the user prompt carried it. The parent does not restate
-# the gate rules; it only hands the child its role and the parameter. This
-# decision discharges the "spawn not decided" note carried by T3, T4, and T5.
+# things — that child's role text (the child's own system_prompt — its
+# invocation contract followed by its marked gate section — extracted at
+# eval time below, fail-fast if a wrap is missing) and the migration repo
+# root parameter, passed through exactly as the user prompt carried it. The
+# parent does not restate the gate rules; it only hands the child its role
+# and the parameter. This decision discharges the "spawn not decided" note
+# carried by T3, T4, and T5.
+#
+# T7 follow-up — the live chain run (ct-rpg-main-NEufxg) returned
+# final_message nil on every hop: the spawned children received only the
+# marked gate section, so the invocation contract — run the named command
+# once, emit a plain-text reply as the run's final event — never reached
+# them; they explored with tool calls, hit max_steps, and ended on a tool
+# call. The role text extracted below is therefore the child's WHOLE
+# system_prompt (contract + marked section), read from the child's file at
+# eval time the same way the marked section was — nothing hard-coded here.
 
 agent_root = Path.expand(Path.join(Path.dirname(__ENV__.file), ".."))
 
@@ -30,34 +40,35 @@ run_id = "ct-rpg-main-#{Aetheris.ID.generate()}"
 model    = System.get_env("CT_RPG_MODEL") || System.get_env("AETHERIS_MODEL") || "claude-haiku-4-5-20251001"
 provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
 
-# T6: the four child role bodies, extracted at eval time from the marked gate
-# sections inside each child's own system_prompt (the at1cmd skill-hint
-# pattern, as in ct-bot's T7 wire). Fail fast at eval time if a wrap or a
-# marker pair is missing. The parent does not restate the gate rules — the
-# blocks embedded in the wire below ARE the children's own marked copies.
-gate_body = fn root, file, gate ->
+# T6, extended by the T7 follow-up: the four child role texts, read at eval
+# time from each child's own file (the at1cmd skill-hint pattern, as in
+# ct-bot's T7 wire). Each role text is the child's own system_prompt — its
+# invocation contract (the paragraphs before the marked block: run the named
+# command once; emit a plain-text reply as the run's final event) FOLLOWED
+# by its marked gate section — up to and including the end-marker line.
+# Fail fast at eval time if a wrap is missing or its heredoc unterminated.
+# The parent does not restate the gate rules or the contracts — the blocks
+# embedded in the wire below ARE the children's own system prompts.
+gate_role = fn root, file ->
   path = Path.join([root, "agents", file])
   text = if File.exists?(path), do: File.read!(path), else: raise("missing ct-rpg child wrap: #{path}")
 
-  start_marker = "=== GATE #{gate} — "
-  end_marker = "=== END GATE #{gate} — "
-
-  case String.split(text, start_marker) do
-    [_before, after_start] ->
-      case String.split(after_start, end_marker) do
-        [body, _after_end] -> String.trim(body)
-        _ -> raise("unpaired end marker in #{path}")
+  case String.split(text, "system_prompt:    \"\"\"", parts: 2) do
+    [_before, after_prompt] ->
+      case String.split(after_prompt, "\n\"\"\"", parts: 2) do
+        [role, _after] -> String.trim(role)
+        _ -> raise("unterminated system_prompt heredoc in #{path}")
       end
 
     _ ->
-      raise("unpaired gate marker in #{path}")
+      raise("system_prompt heredoc not found in #{path}")
   end
 end
 
-preflight_body = gate_body.(agent_root, "rpg-preflight.exs", "0")
-migrate_body   = gate_body.(agent_root, "rpg-migrate.exs", "2")
-verify_body    = gate_body.(agent_root, "rpg-verify.exs", "3")
-api_body       = gate_body.(agent_root, "rpg-api.exs", "4")
+preflight_role = gate_role.(agent_root, "rpg-preflight.exs")
+migrate_role   = gate_role.(agent_root, "rpg-migrate.exs")
+verify_role    = gate_role.(agent_root, "rpg-verify.exs")
+api_role       = gate_role.(agent_root, "rpg-api.exs")
 
 # T7 follow-up: the sandbox is caller-supplied when the variable is set and
 # non-empty; the file-derived root remains the fallback. The children are
@@ -289,42 +300,44 @@ line, or an explicit failure report — report which hop failed and that
 the remaining hops did not run, and stop. Do not retry. Do not spawn the
 rest.
 
-Each hop's task_prompt is exactly two things — that child's role body and
-the parameter. You do not restate the gate rules; you only hand the child
-its role and the parameter:
+Each hop's task_prompt is exactly two things — that child's role text and
+the parameter. You do not restate the gate rules or the invocation
+contract; you only hand the child its role and the parameter:
 
-- The role body: the child's marked gate section, copied VERBATIM from the
-  correspondingly named marked block below. These blocks were extracted at
-  eval time from each child's own system_prompt — they are the children's
-  own copies of the spec's gate sections, not yours to edit.
+- The role text: the correspondingly named block below, copied VERBATIM
+  and whole. Each block is that child's own system_prompt, extracted at
+  eval time from the child's file — its invocation contract (run the
+  named command once; emit a plain-text reply as the run's final event)
+  followed by its marked gate section. Edit nothing, drop nothing, add
+  nothing of yours.
 - The parameter: one line, exactly as the child already expects it —
   "Migration repo root: <the value from the user prompt>". Never invent,
   substitute, or hard-code a path; if the user prompt carries no value,
   report that and run no hop.
 
-  hop 1 (preflight) → the PREFLIGHT ROLE BODY block below
-  hop 2 (migrate)   → the MIGRATE ROLE BODY block below
-  hop 3 (verify)    → the VERIFY ROLE BODY block below
-  hop 4 (api)       → the API ROLE BODY block below
+  hop 1 (preflight) → the PREFLIGHT ROLE TEXT block below
+  hop 2 (migrate)   → the MIGRATE ROLE TEXT block below
+  hop 3 (verify)    → the VERIFY ROLE TEXT block below
+  hop 4 (api)       → the API ROLE TEXT block below
 
 The chain is exactly these four hops — gates 1 (services) and 5 (tests)
 have no child in this milestone's ticket list and are not hops.
 
-=== PREFLIGHT ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-preflight.exs's marked gate section) ===
-#{preflight_body}
-=== END PREFLIGHT ROLE BODY ===
+=== PREFLIGHT ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-preflight.exs) ===
+#{preflight_role}
+=== END PREFLIGHT ROLE TEXT ===
 
-=== MIGRATE ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-migrate.exs's marked gate section) ===
-#{migrate_body}
-=== END MIGRATE ROLE BODY ===
+=== MIGRATE ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-migrate.exs) ===
+#{migrate_role}
+=== END MIGRATE ROLE TEXT ===
 
-=== VERIFY ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-verify.exs's marked gate section) ===
-#{verify_body}
-=== END VERIFY ROLE BODY ===
+=== VERIFY ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-verify.exs) ===
+#{verify_role}
+=== END VERIFY ROLE TEXT ===
 
-=== API ROLE BODY (extracted at eval time from ct-rpg/agents/rpg-api.exs's marked gate section) ===
-#{api_body}
-=== END API ROLE BODY ===
+=== API ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-api.exs) ===
+#{api_role}
+=== END API ROLE TEXT ===
 """,
   user_prompt:      "T6 fixture turn — not a live run. Parameter: migration repo root = <MIGRATION_REPO_ROOT>. Begin."
 }
