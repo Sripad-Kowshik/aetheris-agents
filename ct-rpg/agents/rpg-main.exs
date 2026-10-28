@@ -59,17 +59,28 @@ migrate_body   = gate_body.(agent_root, "rpg-migrate.exs", "2")
 verify_body    = gate_body.(agent_root, "rpg-verify.exs", "3")
 api_body       = gate_body.(agent_root, "rpg-api.exs", "4")
 
+# T7 follow-up: the sandbox is caller-supplied when the variable is set and
+# non-empty; the file-derived root remains the fallback. The children are
+# still read from the file-derived root above — only the run's sandbox_path
+# moves.
+sandbox_path =
+  case System.get_env("CT_RPG_SANDBOX_PATH") do
+    nil -> agent_root
+    "" -> agent_root
+    path -> path
+  end
+
 %Aetheris.RunConfig{
   run_id:           run_id,
   mode:             :record,
   provider:         provider,
   model:            model,
   label:            "CT-RPG Migration Gate Orchestrator",
-  sandbox_path:     agent_root,
+  sandbox_path:     sandbox_path,
   overlay_base_dir: nil,
   max_steps:        12,
   context_strategy: :full,
-  tools:            ["spawn_agent", "wait_for_all"],
+  tools:            ["spawn_agent", "wait_for_all", "run_command"],
   system_prompt:    """
 # migration · runbook-gates — extracted spec (v0.1)
 
@@ -256,6 +267,7 @@ Harness mechanics (not choices):
 - spawn_agent arguments are task_prompt, tools, max_steps, timeout_ms —
   there is no payload field. task_prompt becomes the child's system_prompt;
   put the child's role body AND its parameter in task_prompt.
+- Each hop is spawned with tools: ["run_command"].
 - spawn_agent does not load the standalone wraps in ct-rpg/agents/ — the
   role bodies travel inside this prompt and are copied into each
   task_prompt from the marked blocks below (the ct-bot T7 finding).
