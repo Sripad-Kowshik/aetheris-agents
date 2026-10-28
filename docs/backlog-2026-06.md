@@ -153,16 +153,6 @@
 
 ---
 
-### BL-292 — run_command refuses bash, so a gate agent cannot run an existing shell script
-- state: open
-- type: missing capability
-- area: harness — exec server
-- priority: medium _(proposed)_ · size: S _(proposed)_
-- evidence: docs/evidence/BL-292.md
-- done-when: run_command accepts bash as a permitted name and a call with a script path and fixed args returns the script's exit code. docker is named as the next same-shaped need and is not in this done-when. Design: docs/aetheris/backlog/bl-292
-
----
-
 
 ---
 

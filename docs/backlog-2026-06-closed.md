@@ -9940,3 +9940,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-288.md
 - done-when: OPTIONS from an allowed origin with Access-Control-Request-Method GET returns 204 and Access-Control-Allow-Methods includes GET. A GET with no bearer still returns 401. Design: docs/aetheris/backlog/bl-288
 - disposition: fixed
+
+---
+
+### BL-292 — run_command refuses bash, so a gate agent cannot run an existing shell script
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-292.md
+- done-when: run_command accepts bash as a permitted name and a call with a script path and fixed args returns the script's exit code. docker is named as the next same-shaped need and is not in this done-when. Design: docs/aetheris/backlog/bl-292
+- disposition: fixed
