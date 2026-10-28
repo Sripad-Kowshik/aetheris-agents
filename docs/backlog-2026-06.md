@@ -153,16 +153,6 @@
 
 ---
 
-### BL-294 — run_command refuses curl, so an api agent cannot run the gate curls
-- state: open
-- type: missing capability
-- area: harness — exec server
-- priority: medium _(proposed)_ · size: S _(proposed)_
-- evidence: docs/evidence/BL-294.md
-- done-when: run_command accepts curl as a permitted name and a call with fixed args (GET or POST) returns the command's exit code. Design: docs/aetheris/backlog/bl-294
-
----
-
 
 ---
 

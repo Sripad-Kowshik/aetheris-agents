@@ -9962,3 +9962,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-293.md
 - done-when: run_command accepts docker as a permitted name and a call with fixed args (compose run --rm …) returns the command's exit code. Design: docs/aetheris/backlog/bl-293
 - disposition: fixed
+
+---
+
+### BL-294 — run_command refuses curl, so an api agent cannot run the gate curls
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-294.md
+- done-when: run_command accepts curl as a permitted name and a call with fixed args (GET or POST) returns the command's exit code. Design: docs/aetheris/backlog/bl-294
+- disposition: fixed
