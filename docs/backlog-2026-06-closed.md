@@ -9951,3 +9951,14 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-292.md
 - done-when: run_command accepts bash as a permitted name and a call with a script path and fixed args returns the script's exit code. docker is named as the next same-shaped need and is not in this done-when. Design: docs/aetheris/backlog/bl-292
 - disposition: fixed
+
+---
+
+### BL-293 — run_command refuses docker, so a migrate agent cannot run the compose step
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-293.md
+- done-when: run_command accepts docker as a permitted name and a call with fixed args (compose run --rm …) returns the command's exit code. Design: docs/aetheris/backlog/bl-293
+- disposition: fixed
