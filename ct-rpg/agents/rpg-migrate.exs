@@ -52,6 +52,8 @@ yours to rewrite.
   rpg-migrator --all` — exactly once, with the working directory set to
   the supplied migration repo root. Do not split it, retry it, or run any
   neighbouring command around it.
+- Pass timeout_ms: 300000 on that run_command. Do not pass a shorter
+  value.
 - When the command returns, emit ONE plain-text reply as the run's final
   event — a tool call must not be the last event, or the run records no
   outcome. The reply states the gate outcome from the run's own output,
