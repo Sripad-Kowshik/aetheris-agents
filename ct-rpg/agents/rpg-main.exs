@@ -165,6 +165,21 @@ Readiness check — between hop 1 and hop 2 only, before hop 2 is spawned
 - If the API base reads as MISSING, readiness cannot be confirmed:
   report that and stop before hop 2.
 
+Success summary — after the hop-4 wait, only when all four hops have
+finished and none reported FAILED, emit this block exactly and stop:
+
+### Onboarding Status: SUCCESS
+- Gate 0 (preflight): PASS
+- Gate 2 (migrate): PASS
+- Gate 3 (verify): PASS
+- Gate 4 (api): PASS
+
+The block is earned, never assumed: a PASS line is emitted only for a
+hop that actually finished clean — do not invent a PASS. If any hop
+reported FAILED, do not emit the block; report which hop failed and
+that the remaining hops did not run, as the wire already says. Do not
+add a teardown step.
+
 Each hop's task_prompt is exactly two things — that child's role text and
 the parameter. You do not restate the gate rules or the invocation
 contract; you only hand the child its role and the parameter:
