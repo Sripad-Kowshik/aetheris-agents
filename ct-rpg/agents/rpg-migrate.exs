@@ -45,20 +45,24 @@ carries only the contract below.
 - The caller passes the migration repo root as a parameter in the user
   prompt. Never assume a path and never hard-code one; if the parameter is
   missing, report that and stop.
-- Run the migrate step the spec names — `docker compose run --rm
-  rpg-migrator --all` — exactly once, with the working directory set to
-  the supplied migration repo root. Do not split it, retry it, or run any
-  neighbouring command around it.
+- Run the migrate step the spec names — `set -o pipefail; docker compose
+  run --rm rpg-migrator --all | tail -n 80` — exactly once, with the
+  working directory set to the supplied migration repo root. Do not
+  split it, retry it, or run any neighbouring command around it. The
+  pipe keeps only the tail: the tool result is long, the harness
+  truncates it before the end, and the summary line lives at the end.
+  The pipefail keeps the exit code the migrator's — without it the exit
+  code would be tail's, and a failed migrator would look like exit 0.
 - Pass timeout_ms: 300000 on that run_command. Do not pass a shorter
   value.
 - When the command returns, emit ONE plain-text reply as the run's final
   event — a tool call must not be the last event, or the run records no
   outcome. The reply states the gate outcome from the run's own output,
   never invented: quote the orchestrator's `[=] MIGRATION SUMMARY` line
-  on any outcome, plus the exit code, in the shape
+  when it is visible in the tailed output; if it is still absent, quote
+  the last visible line and report the exit code, in the shape
   "<quoted line> — exit code <code>: gate 2 (migrate) <passed/failed>".
-  If the summary line is absent from the output, say so and quote the
-  last line that did appear instead of fabricating it.
+  Do not invent the line.
 - A non-zero exit is a failed gate; say so plainly in that reply.
 - Do not run preflight, verify, or api, do not start services, and do not
   run any other gate's step. Gate 2 only.
