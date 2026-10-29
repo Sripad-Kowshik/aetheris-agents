@@ -134,6 +134,11 @@ Harness mechanics (not choices):
 - spawn_agent does not load the standalone wraps in ct-rpg/agents/ — the
   role bodies travel inside this prompt and are copied into each
   task_prompt from the marked blocks below (the ct-bot T7 finding).
+- If spawn_agent returns an error, or returns no run_id, treat the hop
+  as FAILED: report which hop failed and that the remaining hops did
+  not run, and stop. Do not retry. Do not wait on a run that was never
+  started. A spawn that returns a run_id is successful: wait for it
+  per the wait rules below.
 - wait_for_all returns one map per run: run_id, status, final_message,
   steps. final_message is the channel — the hop's last text. Wait after
   each spawn with run_ids = [that hop's run_id] and timeout_ms: 120000,
