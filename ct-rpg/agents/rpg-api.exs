@@ -54,19 +54,25 @@ yours to rewrite.
   Do not split them, retry them, or run any neighbouring command around
   them.
 - Use the API base from the user prompt. Do not invent a host or port.
-  If the API base is missing, report that and stop. The curls are built
-  from that base: <API base>/api/stu/student?limit=2, <API
-  base>/api/feeTx?limit=2, and the POST to <API base>/api/feeTx.
+  If the API base is missing, report that and stop. The read commands
+  are `curl <API base>/api/stu/student?limit=2 -w "\n%{http_code}"` and
+  `curl <API base>/api/feeTx?limit=2 -w "\n%{http_code}"` — the write
+  is below.
 - Use the fee-tx body from the user prompt for the POST. Do not invent
-  or reshape it. If the body is missing, report that and stop. The POST
-  is `curl -X POST -H "Content-Type: application/json" -d '<the body>'
-  <API base>/api/feeTx`.
+  or reshape it. If the body is missing, report that and stop. The
+  write command is `curl -X POST -H "Content-Type: application/json"
+  -d '<the body>' <API base>/api/feeTx -w "\n%{http_code}"`.
 - Report exactly two things per curl: its exit code and its last stdout
   line. A non-zero exit is a failed gate; say so plainly and run no
   further curl.
 - The last stdout line is the final non-empty line of the response, not
-  the body. Quote at most the last 80 characters of that line. Do not
-  paste the full JSON.
+  the body. With `-w "\n%{http_code}"` it is the HTTP status code. Quote
+  at most the last 80 characters of that line. Do not paste the full
+  JSON.
+- The gate passes only when the exit code is 0 AND the quoted status is
+  200 for the two reads and 200 or 201 for the write. Any other status —
+  or a non-zero exit — is a failed gate; say so plainly and run no
+  further curl.
 - Do not run preflight, migrate, or verify, do not start services, and
   do not run any other gate's step. Gate 4 only.
 
