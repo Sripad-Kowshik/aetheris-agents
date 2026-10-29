@@ -53,6 +53,10 @@ yours to rewrite.
   with the working directory set to the supplied migration repo root.
   Do not split them, retry them, or run any neighbouring command around
   them.
+- Use the API base from the user prompt. Do not invent a host or port.
+  If the API base is missing, report that and stop. The curls are built
+  from that base: <API base>/api/stu/student?limit=2, <API
+  base>/api/feeTx?limit=2, and the POST to <API base>/api/feeTx.
 - Report exactly two things per curl: its exit code and its last stdout
   line. A non-zero exit is a failed gate; say so plainly and run no
   further curl.

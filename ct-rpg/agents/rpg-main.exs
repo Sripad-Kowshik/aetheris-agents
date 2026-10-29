@@ -81,6 +81,17 @@ sandbox_path =
     path -> path
   end
 
+# T7 follow-up: hop 4's API base — caller-supplied at eval time, never
+# hard-coded (API_PORT is configurable and the deployed host is not
+# localhost). Unset is legal: the file still evaluates, and the wire
+# reports the missing value and runs no hop 4. Hops 1-3 never receive it.
+api_base =
+  case System.get_env("CT_RPG_API_BASE") do
+    nil -> "<MISSING — CT_RPG_API_BASE is not set; hop 4 cannot run>"
+    "" -> "<MISSING — CT_RPG_API_BASE is not set; hop 4 cannot run>"
+    base -> base
+  end
+
 %Aetheris.RunConfig{
   run_id:           run_id,
   mode:             :record,
@@ -310,10 +321,19 @@ contract; you only hand the child its role and the parameter:
   named command once; emit a plain-text reply as the run's final event)
   followed by its marked gate section. Edit nothing, drop nothing, add
   nothing of yours.
-- The parameter: one line, exactly as the child already expects it —
-  "Migration repo root: <the value from the user prompt>". Never invent,
-  substitute, or hard-code a path; if the user prompt carries no value,
-  report that and run no hop.
+- The parameter, exactly as the child already expects it. Never invent,
+  substitute, or hard-code a path or a port:
+  - Hops 1-3: one line — "Migration repo root: <the value from the user
+    prompt>". If the user prompt carries no value, report that and run
+    no hop.
+  - Hop 4 only: two lines —
+      Migration repo root: <the value from the user prompt>
+      API base: #{api_base}
+    The API base is the value CT_RPG_API_BASE carried in the parent's
+    environment at eval time — it is not in the user prompt and is never
+    invented. No other hop receives the API base. If the API base line
+    above reads as MISSING, report that hop 4 cannot run and do not run
+    it; hops 1-3 still run.
 
   hop 1 (preflight) → the PREFLIGHT ROLE TEXT block below
   hop 2 (migrate)   → the MIGRATE ROLE TEXT block below
