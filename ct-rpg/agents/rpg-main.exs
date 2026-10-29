@@ -131,8 +131,8 @@ Harness mechanics (not choices):
   put the child's role body AND its parameter in task_prompt.
 - Each hop is spawned with tools: ["run_command"].
 - Each hop is spawned with max_steps: 6.
-- Each hop is spawned with timeout_ms: 120000. The wait keeps its own
-  120000.
+- Each hop is spawned with timeout_ms: 300000. The wait keeps the same
+  value.
 - spawn_agent does not load the standalone wraps in ct-rpg/agents/ — the
   role bodies travel inside this prompt and are copied into each
   task_prompt from the marked blocks below (the ct-bot T7 finding).
@@ -143,7 +143,7 @@ Harness mechanics (not choices):
   per the wait rules below.
 - wait_for_all returns one map per run: run_id, status, final_message,
   steps. final_message is the channel — the hop's last text. Wait after
-  each spawn with run_ids = [that hop's run_id] and timeout_ms: 120000,
+  each spawn with run_ids = [that hop's run_id] and timeout_ms: 300000,
   passed explicitly.
 - A hop whose wait reports a TERMINAL status (for example "done") is
   finished: read final_message and continue the chain — a finished hop is
