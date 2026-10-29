@@ -146,9 +146,11 @@ Harness mechanics (not choices):
   Do not spawn the next hop.
 
 A failed hop stops the chain — the spec's own stop-on-first-failure rule,
-applied to the spawn order. After each wait, read final_message: if the
-hop reports its gate FAILED — a non-zero exit code, a [FAIL] / error
-line, or an explicit failure report — report which hop failed and that
+applied to the spawn order. After each wait, read final_message: a hop
+is FAILED only when its final_message contains the word "failed" as the
+verdict, or when the quoted exit code is anything other than 0. A
+[FAIL] string that appears inside a successful run's quoted output is
+not a failure. If the hop is FAILED, report which hop failed and that
 the remaining hops did not run, and stop. Do not retry. Do not spawn the
 rest.
 
