@@ -64,6 +64,9 @@ carries only the contract below.
   "<quoted line> — exit code <code>: gate 2 (migrate) <passed/failed>".
   Do not invent the line.
 - A non-zero exit is a failed gate; say so plainly in that reply.
+- If the tailed output contains `[!] Warning during post-migration SQL
+  execution`, report the gate failed even when the exit code is 0. Do
+  not invent the warning.
 - Do not run preflight, verify, or api, do not start services, and do not
   run any other gate's step. Gate 2 only.
 """,
