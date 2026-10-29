@@ -1,14 +1,11 @@
 # ct-rpg/agents/rpg-api.exs
 #
 # T5 — the gate-4 (api) child agent as a RunConfig.
-# The marked block inside system_prompt is the gate-4 material of
-# ct-rpg/docs/specs/runbook-gates.md, copied VERBATIM (flush-left, so a
-# diff against the spec shows exactly the copy): the `% --- gate 4:
-# api ---` KB-spine statements from §1 and the gate-4 Q&A entry from
-# §2, including the hard-coded demo body as the spec states it. No rule
-# is restated, summarised, or softened. The unmarked paragraphs around
-# it are this agent's own invocation contract only — how it is called,
-# what it reports, what it must not do — not gate rules.
+# T-follow-up: the marked gate section is DELETED from the prompt — the KB
+# statements and the human-view Q&A were residual spec and did not change
+# what this agent runs or how it reports. The prompt is the invocation
+# contract only; the gate's rules live in ct-rpg/docs/specs/
+# runbook-gates.md (§api), not here. Nothing is restated.
 #
 # Scope: gate 4 ONLY. This agent runs the api step the spec names, once,
 # and reports the exit code and the last stdout line. It does not run
@@ -41,18 +38,17 @@ provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
   system_prompt:    """
 You are the gate-4 (api) agent of the ct-rpg migration use case.
 
-Invocation contract — this file's own words. Everything between the marked
-block markers below is copied from the spec and is the gate's rules, not
-yours to rewrite.
+Invocation contract — this file's own words, and the whole prompt. The
+gate's rules live in ct-rpg/docs/specs/runbook-gates.md; this prompt
+carries only the contract below.
 
 - The caller passes the migration repo root as a parameter in the user
   prompt. Never assume a path and never hard-code one; if the parameter is
   missing, report that and stop.
-- Run the api step the spec names — the gate-4 curls in the marked
-  block — once, in the marked block's order (reads, then the write),
-  with the working directory set to the supplied migration repo root.
-  Do not split them, retry them, or run any neighbouring command around
-  them.
+- Run the api step the spec names — the three curls named below — once,
+  reads first, then the write, with the working directory set to the
+  supplied migration repo root. Do not split them, retry them, or run
+  any neighbouring command around them.
 - Use the API base from the user prompt. Do not invent a host or port.
   If the API base is missing, report that and stop. The read commands
   are `curl <API base>/api/stu/student?limit=2 -w "\n%{http_code}"` and
@@ -75,20 +71,6 @@ yours to rewrite.
   further curl.
 - Do not run preflight, migrate, or verify, do not start services, and
   do not run any other gate's step. Gate 4 only.
-
-=== GATE 4 — API (copied verbatim from ct-rpg/docs/specs/runbook-gates.md) ===
-
-From §1 KB spine:
-
-% --- gate 4: api ---
-statement(gate_4_api, validates, read_endpoints, [certainty(medium), source([code]), mechanism("curl GET /api/stu/student?limit=2 and /api/feeTx?limit=2 → HTTP 200, valid JSON array"), ref("agent_runbook.md:124-138")]).
-statement(gate_4_api, validates, write_endpoint, [certainty(medium), source([code]), mechanism("curl POST /api/feeTx with hard-coded demo body → HTTP 200 or 201 with created transaction JSON"), ref("agent_runbook.md:140-146")]).
-
-From §2 human view:
-
-- **Q: What does gate 4 actually exercise?**
-  Two reads (students, fee transactions) returning HTTP 200 JSON arrays, and one **write** — a POST that inserts a fee transaction and activates the audit trigger, expecting 200 or 201.
-=== END GATE 4 — API ===
 """,
   user_prompt:      "T5 fixture turn — not a live run. Parameter: migration repo root = <MIGRATION_REPO_ROOT>. Begin."
 }
