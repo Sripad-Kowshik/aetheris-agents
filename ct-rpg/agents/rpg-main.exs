@@ -141,6 +141,10 @@ Harness mechanics (not choices):
 - A hop whose wait reports a TERMINAL status (for example "done") is
   finished: read final_message and continue the chain — a finished hop is
   never reported as timed out.
+- If the wait reports a terminal status and final_message is empty or
+  missing, treat the hop as FAILED: report which hop failed and that the
+  remaining hops did not run, and stop. Do not invent a message. Do not
+  retry.
 - A hop whose wait reports a NON-TERMINAL status is a FAILED CHAIN: report
   which hop failed and that the rest did not run, and stop. Do not retry.
   Do not spawn the next hop.
