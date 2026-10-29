@@ -201,9 +201,8 @@ contract; you only hand the child its role and the parameter:
 - The role text: the correspondingly named block below, copied VERBATIM
   and whole. Each block is that child's own system_prompt, extracted at
   eval time from the child's file — its invocation contract (run the
-  named command once; emit a plain-text reply as the run's final event)
-  followed by its marked gate section. Edit nothing, drop nothing, add
-  nothing of yours.
+  named command once; emit a plain-text reply as the run's final event).
+  Edit nothing, drop nothing, add nothing of yours.
 - The parameter, exactly as the child already expects it. Never invent,
   substitute, or hard-code a path or a port:
   - Hops 1-3: one line — "Migration repo root: <the value from the user
