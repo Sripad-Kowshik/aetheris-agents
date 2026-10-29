@@ -291,6 +291,7 @@ the turn below you run the gate chain through child agents.
 Four hops, ONE at a time, in this exact order:
 
   hop 1 — gate 0 preflight
+  readiness check — services, not a hop (the parent runs it itself)
   hop 2 — gate 2 migrate
   hop 3 — gate 3 verify (parity)
   hop 4 — gate 4 api
@@ -324,6 +325,19 @@ hop reports its gate FAILED — a non-zero exit code, a [FAIL] / error
 line, or an explicit failure report — report which hop failed and that
 the remaining hops did not run, and stop. Do not retry. Do not spawn the
 rest.
+
+Readiness check — between hop 1 and hop 2 only, before hop 2 is spawned
+(not a hop, not a gate; the parent runs it itself with run_command):
+
+- The command, exactly once: `curl #{api_base}/health` — <API base> is
+  the same value the hop-4 parameter carries.
+- The check passes only when the exit code is 0 AND the response
+  contains "Healthy".
+- On any other exit code or response, report that services are not
+  ready and stop the chain — spawn no further hop. Do not start
+  services, do not retry, and do not call wait-for-api.sh.
+- If the API base reads as MISSING, readiness cannot be confirmed:
+  report that and stop before hop 2.
 
 Each hop's task_prompt is exactly two things — that child's role text and
 the parameter. You do not restate the gate rules or the invocation
