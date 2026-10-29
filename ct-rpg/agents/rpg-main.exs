@@ -131,6 +131,8 @@ Harness mechanics (not choices):
   put the child's role body AND its parameter in task_prompt.
 - Each hop is spawned with tools: ["run_command"].
 - Each hop is spawned with max_steps: 6.
+- Each hop is spawned with timeout_ms: 120000. The wait keeps its own
+  120000.
 - spawn_agent does not load the standalone wraps in ct-rpg/agents/ — the
   role bodies travel inside this prompt and are copied into each
   task_prompt from the marked blocks below (the ct-bot T7 finding).
