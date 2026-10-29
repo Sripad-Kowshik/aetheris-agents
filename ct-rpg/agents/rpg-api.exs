@@ -57,6 +57,10 @@ yours to rewrite.
   If the API base is missing, report that and stop. The curls are built
   from that base: <API base>/api/stu/student?limit=2, <API
   base>/api/feeTx?limit=2, and the POST to <API base>/api/feeTx.
+- Use the fee-tx body from the user prompt for the POST. Do not invent
+  or reshape it. If the body is missing, report that and stop. The POST
+  is `curl -X POST -H "Content-Type: application/json" -d '<the body>'
+  <API base>/api/feeTx`.
 - Report exactly two things per curl: its exit code and its last stdout
   line. A non-zero exit is a failed gate; say so plainly and run no
   further curl.

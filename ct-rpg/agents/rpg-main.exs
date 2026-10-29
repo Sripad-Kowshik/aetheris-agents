@@ -92,6 +92,19 @@ api_base =
     base -> base
   end
 
+# T7 follow-up: hop 4's demo fee-tx body — caller-supplied at eval time,
+# never hard-coded and never rebuilt from the GET response (the API
+# expects status as a string; reshaping the read response into the write
+# body is what produced the 400). Unset is legal: the file still
+# evaluates, and the wire reports the missing value and runs no hop 4.
+# Hops 1-3 never receive it.
+fee_tx_body =
+  case System.get_env("CT_RPG_FEE_TX_BODY") do
+    nil -> "<MISSING — CT_RPG_FEE_TX_BODY is not set; hop 4 cannot run>"
+    "" -> "<MISSING — CT_RPG_FEE_TX_BODY is not set; hop 4 cannot run>"
+    body -> body
+  end
+
 %Aetheris.RunConfig{
   run_id:           run_id,
   mode:             :record,
@@ -326,12 +339,15 @@ contract; you only hand the child its role and the parameter:
   - Hops 1-3: one line — "Migration repo root: <the value from the user
     prompt>". If the user prompt carries no value, report that and run
     no hop.
-  - Hop 4 only: two lines —
+  - Hop 4 only: three lines —
       Migration repo root: <the value from the user prompt>
       API base: #{api_base}
-    The API base is the value CT_RPG_API_BASE carried in the parent's
-    environment at eval time — it is not in the user prompt and is never
-    invented. No other hop receives the API base. If the API base line
+      Fee-tx body: #{fee_tx_body}
+    The API base and the fee-tx body are the values CT_RPG_API_BASE and
+    CT_RPG_FEE_TX_BODY carried in the parent's environment at eval time —
+    they are not in the user prompt and are never invented, reshaped, or
+    rebuilt from the GET response. No other hop receives the API base or
+    the fee-tx body. If either the API base line or the fee-tx body line
     above reads as MISSING, report that hop 4 cannot run and do not run
     it; hops 1-3 still run.
 
