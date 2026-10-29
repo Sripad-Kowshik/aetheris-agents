@@ -200,19 +200,19 @@ contract; you only hand the child its role and the parameter:
 The chain is exactly these four hops — gates 1 (services) and 5 (tests)
 have no child in this milestone's ticket list and are not hops.
 
-=== PREFLIGHT ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-preflight.exs) ===
+=== PREFLIGHT ROLE TEXT (the child's own system_prompt — invocation contract only — extracted at eval time from ct-rpg/agents/rpg-preflight.exs) ===
 #{preflight_role}
 === END PREFLIGHT ROLE TEXT ===
 
-=== MIGRATE ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-migrate.exs) ===
+=== MIGRATE ROLE TEXT (the child's own system_prompt — invocation contract only — extracted at eval time from ct-rpg/agents/rpg-migrate.exs) ===
 #{migrate_role}
 === END MIGRATE ROLE TEXT ===
 
-=== VERIFY ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-verify.exs) ===
+=== VERIFY ROLE TEXT (the child's own system_prompt — invocation contract only — extracted at eval time from ct-rpg/agents/rpg-verify.exs) ===
 #{verify_role}
 === END VERIFY ROLE TEXT ===
 
-=== API ROLE TEXT (the child's own system_prompt — invocation contract + marked gate section — extracted at eval time from ct-rpg/agents/rpg-api.exs) ===
+=== API ROLE TEXT (the child's own system_prompt — invocation contract only — extracted at eval time from ct-rpg/agents/rpg-api.exs) ===
 #{api_role}
 === END API ROLE TEXT ===
 """,
