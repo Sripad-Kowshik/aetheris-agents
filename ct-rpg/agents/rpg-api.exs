@@ -64,6 +64,9 @@ yours to rewrite.
 - Report exactly two things per curl: its exit code and its last stdout
   line. A non-zero exit is a failed gate; say so plainly and run no
   further curl.
+- The last stdout line is the final non-empty line of the response, not
+  the body. Quote at most the last 80 characters of that line. Do not
+  paste the full JSON.
 - Do not run preflight, migrate, or verify, do not start services, and
   do not run any other gate's step. Gate 4 only.
 
