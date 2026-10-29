@@ -186,6 +186,7 @@ finished and none reported FAILED, emit this block exactly and stop:
 - Gate 2 (migrate): PASS
 - Gate 3 (verify): PASS
 - Gate 4 (api): PASS
+- Gates 1 (services) and 5 (tests) are not hops in this milestone.
 
 The block is earned, never assumed: a PASS line is emitted only for a
 hop that actually finished clean — do not invent a PASS. If any hop
