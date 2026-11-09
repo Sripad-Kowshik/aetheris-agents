@@ -167,6 +167,7 @@ const USE_CASE_PREFIXES: &[(&str, &str)] = &[
     ("docbuilder",        "Docbuilder"),
     ("eduloka",           "Eduloka"),
     ("ct-bot",            "CT-Bot"),
+    ("ct-rpg",            "CT-RPG"),
     ("at1cmd",            "API / Tenant"),
     ("at1qry",            "API / Tenant"),
     ("cot1",              "API / Gateway"),

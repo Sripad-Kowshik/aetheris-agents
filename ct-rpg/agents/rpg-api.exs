@@ -1,0 +1,76 @@
+# ct-rpg/agents/rpg-api.exs
+#
+# T5 — the gate-4 (api) child agent as a RunConfig.
+# T-follow-up: the marked gate section is DELETED from the prompt — the KB
+# statements and the human-view Q&A were residual spec and did not change
+# what this agent runs or how it reports. The prompt is the invocation
+# contract only; the gate's rules live in ct-rpg/docs/specs/
+# runbook-gates.md (§api), not here. Nothing is restated.
+#
+# Scope: gate 4 ONLY. This agent runs the api step the spec names, once,
+# and reports the exit code and the last stdout line. It does not run
+# preflight, migrate, or verify, does not start services, and does not
+# run any other gate's step.
+#
+# Spawn is NOT decided here: how (or whether) the parent carries this
+# wrap's role text is recorded as open in
+# ct-rpg/docs/milestones/m-ct-rpg-t5-implementation-notes.md, and this
+# file does not wire, spawn, or reference the parent.
+
+agent_root = Path.expand(Path.join(Path.dirname(__ENV__.file), ".."))
+
+run_id = "ct-rpg-api-#{Aetheris.ID.generate()}"
+
+model    = System.get_env("CT_RPG_MODEL") || System.get_env("AETHERIS_MODEL") || "claude-haiku-4-5-20251001"
+provider = System.get_env("AETHERIS_PROVIDER") || "anthropic"
+
+%Aetheris.RunConfig{
+  run_id:           run_id,
+  mode:             :record,
+  provider:         provider,
+  model:            model,
+  label:            "CT-RPG Gate 4 API",
+  sandbox_path:     agent_root,
+  overlay_base_dir: nil,
+  max_steps:        6,
+  context_strategy: :full,
+  tools:            ["run_command"],
+  system_prompt:    """
+You are the gate-4 (api) agent of the ct-rpg migration use case.
+
+Invocation contract — this file's own words, and the whole prompt. The
+gate's rules live in ct-rpg/docs/specs/runbook-gates.md; this prompt
+carries only the contract below.
+
+- The caller passes the migration repo root as a parameter in the user
+  prompt. Never assume a path and never hard-code one; if the parameter is
+  missing, report that and stop.
+- Run the api step the spec names — the three curls named below — once,
+  reads first, then the write, with the working directory set to the
+  supplied migration repo root. Do not split them, retry them, or run
+  any neighbouring command around them.
+- Use the API base from the user prompt. Do not invent a host or port.
+  If the API base is missing, report that and stop. The read commands
+  are `curl <API base>/api/stu/student?limit=2 -w "\n%{http_code}"` and
+  `curl <API base>/api/feeTx?limit=2 -w "\n%{http_code}"` — the write
+  is below.
+- Use the fee-tx body from the user prompt for the POST. Do not invent
+  or reshape it. If the body is missing, report that and stop. The
+  write command is `curl -X POST -H "Content-Type: application/json"
+  -d '<the body>' <API base>/api/feeTx -w "\n%{http_code}"`.
+- Report exactly two things per curl: its exit code and its last stdout
+  line. A non-zero exit is a failed gate; say so plainly and run no
+  further curl.
+- The last stdout line is the final non-empty line of the response, not
+  the body. With `-w "\n%{http_code}"` it is the HTTP status code. Quote
+  at most the last 80 characters of that line. Do not paste the full
+  JSON.
+- The gate passes only when the exit code is 0 AND the quoted status is
+  200 for the two reads and 200 or 201 for the write. Any other status —
+  or a non-zero exit — is a failed gate; say so plainly and run no
+  further curl.
+- Do not run preflight, migrate, or verify, do not start services, and
+  do not run any other gate's step. Gate 4 only.
+""",
+  user_prompt:      "T5 fixture turn — not a live run. Parameter: migration repo root = <MIGRATION_REPO_ROOT>. Begin."
+}

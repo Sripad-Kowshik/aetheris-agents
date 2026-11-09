@@ -1,0 +1,114 @@
+{
+  "id": "runbook_gates_full_pass",
+  "operation": "migration.runbook-gates",
+  "description": "All six runbook gates (0-5) pass on a correctly configured environment: preflight PASS, services healthy, full migration exit 0 with 42 tables, parity audit PASS with report artifact, REST read+write endpoints return 2xx, xUnit suite exit 0, and the agent emits the fixed SUCCESS summary block.",
+  "source": "authored-from-code",
+  "validated_against_legacy": false,
+  "sanitized": true,
+  "notes": "Every expected string/value below is lifted verbatim from the legacy artifacts (agent_runbook.md criteria, verify-prerequisites.sh, migrate_all.py, verify_raven_to_postgres.py, wait-for-api.sh) - nothing hand-invented. Nondeterministic values (timestamps, record counts, test counts, warning counts) are asserted by rule, not by literal. Capture against a live configured run (Docker + reachable RavenDB + .pfx cert) to set validated_against_legacy=true.",
+
+  "given": {
+    "environment": {
+      "working_directory": "repository root",
+      "tools": ["git", "docker", "curl"],
+      "docker_daemon": "running",
+      "compose_v2": "available",
+      "docker_compose_yml": "present at repo root"
+    },
+    "config": {
+      "env_file": ".env copied from .env.example, all 8 required vars set and non-placeholder",
+      "PG_PORT": "15432",
+      "API_PORT": "5000",
+      "PG_DB": "rpg",
+      "RAVEN_URL": "https://<reachable-cluster>.ravendb.cloud (synthesized)",
+      "RAVEN_DB": "BTL (synthesized)",
+      "RAVEN_CERT_FILE": "certs/test-client-cert.pfx (synthesized filename)"
+    },
+    "files": {
+      "certificate": "scripts/certs/test-client-cert.pfx present (synthetic PII-free fixture)",
+      "secrets_tracked_by_git": []
+    },
+    "source_dataset": "any dataset containing the two hard-coded demo UUIDs used by the gate-4 POST body, or the gate-4 body re-targeted to IDs present in the actual source"
+  },
+
+  "expect": {
+    "gate_0_preflight": {
+      "exit_code": 0,
+      "stdout_last_line_matches": "^\\[PREFLIGHT PASS\\] All checks passed \\(\\d+ warnings?\\)\\.$"
+    },
+    "gate_1_services": {
+      "psql_select_1": { "stdout": "1", "exit_code": 0 },
+      "health": {
+        "http_status": 200,
+        "body": {
+          "status": "Healthy",
+          "database": "Connected"
+        },
+        "body_assert_rules": {
+          "timestamp": "non-empty ISO-8601 timestamp string (value is generated; do not assert literally)"
+        }
+      }
+    },
+    "gate_2_migration": {
+      "exit_code": 0,
+      "stdout_summary_matches": "^\\[=\\] MIGRATION SUMMARY: 30 succeeded, 0 failed$",
+      "post_sql_applied": ["01_student_fee_view.sql", "02_trigger.sql"],
+      "tables_listed_by_psql_dt": { "count_gte": 42, "note": "runbook criterion: 'Lists all 42 migrated tables'" }
+    },
+    "gate_3_parity": {
+      "exit_code": 0,
+      "overall_status": "PASS",
+      "counts": { "missing": 0, "extra": 0, "mismatches": 0 },
+      "stdout_success_matches": "^\\[SUCCESS\\] 100% COMPLETE PARITY CONFIRMED ACROSS ALL 42 TABLES AND \\d+ RECORDS!$",
+      "report_artifact": {
+        "path_matches": "^validation/exhaustive-parity-report-\\d{8}_\\d{6}\\.json$",
+        "json_overall_status": "PASS"
+      }
+    },
+    "gate_4_api": {
+      "get_students": { "url": "http://localhost:5000/api/stu/student?limit=2", "http_status": 200, "body": "valid JSON array" },
+      "get_fee_transactions": { "url": "http://localhost:5000/api/feeTx?limit=2", "http_status": 200, "body": "valid JSON array" },
+      "post_fee_transaction": {
+        "url": "http://localhost:5000/api/feeTx",
+        "http_status": [200, 201],
+        "body": "created transaction JSON",
+        "body_assert_rules": {
+          "tx_no": "non-empty generated reference; do not assert literally",
+          "studentId": "echoes the studentId sent in the POST body",
+          "feeId": "echoes the feeId sent in the POST body"
+        },
+        "side_effect": "row present in fee_transaction_audit (trigger trg_fee_transaction_audit fired)"
+      }
+    },
+    "gate_5_tests": {
+      "exit_code": 0,
+      "stdout_summary_matches": "^Passed! - Failed: 0, Passed: \\d+, Skipped: 0"
+    },
+    "onboarding_summary": {
+      "format": "markdown block per runbook Summary Contract",
+      "title": "### Onboarding Status: SUCCESS",
+      "step_lines": [
+        "- Step 0 (Preflight): PASS",
+        "- Step 1 (Services Ready): PASS",
+        "- Step 2 (Migration): PASS",
+        "- Step 3 (Parity Audit): PASS",
+        "- Step 4 (API Verification): PASS",
+        "- Step 5 (Automated Tests): PASS"
+      ],
+      "emitted_only_if": "every gate 0-5 passed; any failure instead stops the sequence and reports the failing step (stop_on_error: true)"
+    }
+  },
+
+  "assert_rules": {
+    "nondeterministic_fields": [
+      "preflight warning count (dynamic, e.g. 0-N)",
+      "health body timestamp (generated)",
+      "parity report filename timestamp and total record count",
+      "created fee-transaction tx_no / server-side ids (generated)",
+      "xUnit Passed count (depends on dataset)"
+    ],
+    "known_unstated": [
+      "gate-2 success message quoted in the runbook criterion ('All migrations and post-migration scripts completed successfully') is never printed by migrate_all.py - captured here as the script's actual '[=] MIGRATION SUMMARY:' line instead; see open item in specs/migration/runbook-gates.md"
+    ]
+  }
+}

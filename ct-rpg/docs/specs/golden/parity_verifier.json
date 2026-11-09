@@ -1,0 +1,94 @@
+{
+  "id": "parity_verifier",
+  "operation": "migration.parity-verifier",
+  "description": "Happy path: `verify_raven_to_postgres.py --module students` against a RavenDB/PostgreSQL pair containing exactly 1 organization, 1 institute, and 1 student (same dataset as the etl_module_students fixture, already migrated). The Students pair matches 1:1 with zero field mismatches, prints the verbatim audit banner/table/totals/success lines, writes the exhaustive parity report JSON with overall_status PASS, and exits 0.",
+  "source": "authored-from-code",
+  "validated_against_legacy": false,
+  "sanitized": true,
+  "notes": "All expected strings, column widths, status logic, and the report shape are lifted verbatim from verify_raven_to_postgres.py - nothing hand-invented. PII synthesized per the adapter (same synthetic dataset as etl_module_students). Nondeterministic values (timestamps, report filename, totals embedding live counts) are asserted by rule. Capture against a live legacy run to set validated_against_legacy=true.",
+
+  "given": {
+    "environment": {
+      "working_directory": "repository root (python scripts/verify_raven_to_postgres.py --module students), or inside the rpg-migrator container where the runbook invokes it with WORKDIR /app/scripts"
+    },
+    "config": {
+      "RAVEN_URL": "https://<reachable-cluster>.ravendb.cloud (synthesized)",
+      "RAVEN_DB": "BTL (synthesized)",
+      "RAVEN_CERT_FILE": "certs/test-client-cert.pfx (resolvable from scripts/ or repo root; synthetic fixture)",
+      "PG_HOST": "localhost",
+      "PG_PORT": "15432",
+      "PG_DB": "rpg",
+      "PG_USER": "postgres",
+      "PG_PASSWORD": "(synthesized)"
+    },
+    "args": ["--module", "students"],
+    "filter_note": "'students' matches the spec whose domain/collection/table lowercased equals 'students' -> exactly 1 pair selected (domain 'Students', collection 'Students', table 'student')",
+    "raven_state": "Orgs=1, Institutes=1, Students=1 (identical documents to the etl_module_students fixture, including @metadata ids ending a1/b1/c1)",
+    "postgres_state": "organization=1, institute=1, student=1 rows produced by the students ETL from those exact documents (ids 00000000-...-a1/b1/c1, all columns populated per the ETL mappings)"
+  },
+
+  "expect": {
+    "exit_code": 0,
+    "stdout_verbatim_lines": [
+      "==================================================================================================================",
+      "           RAVENDB -> POSTGRESQL COMPLETE 42-COLLECTION DATA PARITY AUDIT             ",
+      "==================================================================================================================",
+      "[+] Target RavenDB:    https://<reachable-cluster>.ravendb.cloud (DB: BTL)",
+      "[+] Target PostgreSQL: localhost:15432/rpg (User: postgres)",
+      "[*] Auditing 1 collection/table pairs..."
+    ],
+    "stdout_verbatim_lines_assert_rules": {
+      "banner_rule": "three '=' rules of 115 chars bracket the audit banner; banner text exactly 'RAVENDB -> POSTGRESQL COMPLETE 42-COLLECTION DATA PARITY AUDIT'",
+      "target_lines": "URL/db and host:port/db/user interpolated from resolved config; prefix '[+] Target RavenDB:    ' and '[+] Target PostgreSQL: ' verbatim"
+    },
+    "summary_table": {
+      "header_row": "Domain / Entity          | Collection                | PG Table                  | RavenDB  | PG       | Matched  | Status  ",
+      "students_row_matches": "^Students +\\| Students +\\| student +\\| 1 +\\| 1 +\\| 1 +\\| PASS +$",
+      "totals_row_matches": "^TOTAL AUDITED \\(1 TABLES\\) +\\| 1 +\\| 1 +\\| 1 +\\| PASS +$",
+      "column_widths": "domain<24, collection<26, table<26, counts<8, status<8, ' | ' separators"
+    },
+    "report_artifact": {
+      "path_matches": "^validation/exhaustive-parity-report-\\d{8}_\\d{6}\\.json$",
+      "stdout_line": "[+] Detailed Verification Report JSON written to: <absolute-path>",
+      "payload": {
+        "overall_status": "PASS",
+        "collections_audited_count": 1,
+        "total_documents_in_raven": 1,
+        "total_rows_in_postgres": 1,
+        "total_matched_ids": 1,
+        "results": [
+          {
+            "domain": "Students",
+            "collection": "Students",
+            "table": "student",
+            "raven_count": 1,
+            "pg_count": 1,
+            "matched_ids": 1,
+            "missing_in_pg_count": 0,
+            "extra_in_pg_count": 0,
+            "field_mismatches_count": 0,
+            "sample_mismatches": [],
+            "error_message": null,
+            "status": "PASS",
+            "fields_audited_count_assert_rule": "integer > 0 (declared students_comparisons plus auto-expanded Raven keys present as PG columns; exact value depends on the live schema)"
+          }
+        ]
+      }
+    },
+    "final_lines": [
+      "[SUCCESS] 100% COMPLETE PARITY CONFIRMED ACROSS ALL 1 TABLES AND 1 RECORDS!"
+    ]
+  },
+
+  "assert_rules": {
+    "nondeterministic_fields": [
+      "report filename timestamp",
+      "report payload timestamp_utc (ISO-8601; do not assert literally)",
+      "fields_audited_count (depends on live PG columns and Raven document keys present)"
+    ],
+    "known_unstated": [
+      "divergent cases (unordered offset paging on a live source, missing PG table -> MISSING_TABLE, silent localhost:5432/rpg defaults, --core-only no-op, PKCS#12 temp-key fallback) are reified as open items in specs/migration/parity-verifier.md and deliberately not encoded as passing expectations",
+      "the other 41 pairs are not exercised by this fixture; --module students scopes the run to 1 pair"
+    ]
+  }
+}
