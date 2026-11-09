@@ -9885,3 +9885,91 @@ Filed 2026-09-14 to execute the arbiter's rulings R1–R3 of that date: Markdown
 - evidence: docs/evidence/BL-207.md
 - done-when: a decision is recorded on this row: (a) `pivot_root` in the worker's mount namespace plus a shared confinement crate, or (b) `run_command` declared uncontained as a standing position in the determinism contract.
 - disposition: superseded
+
+---
+
+### BL-284 — an HTTP client cannot start a run from an existing .exs and supply only the user turn
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
+- evidence: docs/evidence/BL-284.md
+- done-when: POSTing agent_path + user_prompt gets 202 with run_id; prompt_built carries the supplied user_prompt and the file's tool list, no system_prompt in the request; path confined to the agents root. Design: docs/aetheris/backlog/bl-284
+- disposition: fixed
+
+---
+
+### BL-285 — the runbook's HTTP API section never names AETHERIS_AGENTS_ROOT, the root BL-284's route resolves agent_path against
+- state: done
+- type: documentation
+- area: harness — runbook.md
+- priority: unset — the arbiter's · size: XS _(proposed)_
+- evidence: docs/evidence/BL-285.md
+- done-when: the existing HTTP API section names AETHERIS_AGENTS_ROOT, the default, and that ct-bot/agents/main.exs is relative to it.
+- disposition: fixed
+
+---
+
+### BL-286 — a CORS preflight to the playground API is answered by the auth plug with 401, so no browser origin can call BL-284's route
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: unset — the arbiter's · size: S _(proposed)_
+- evidence: docs/evidence/BL-286.md
+- done-when: OPTIONS from that origin returns 204 before auth, and a POST with no bearer still returns 401.
+- disposition: fixed
+
+---
+
+### BL-287 — no thread or owner field on runs: a host cannot keep a chat thread for an owner across machines
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: medium _(proposed)_ · size: M _(proposed; docs-first per repo convention)_
+- evidence: docs/evidence/BL-287.md
+- done-when: POST agent-file-runs with no thread field is today's 202. owner_id + thread_id stamps the run, still 202; a failed stamp still 202. GET lists that owner's threads; system_prompt never in the request. Design: docs/aetheris/backlog/bl-287
+- disposition: fixed
+
+---
+
+### BL-288 — the preflight allow-methods list refuses GET, so a browser cannot call any playground read route
+- state: done
+- type: missing capability
+- area: harness — API
+- priority: unset — the arbiter's · size: XS _(proposed)_
+- evidence: docs/evidence/BL-288.md
+- done-when: OPTIONS from an allowed origin with Access-Control-Request-Method GET returns 204 and Access-Control-Allow-Methods includes GET. A GET with no bearer still returns 401. Design: docs/aetheris/backlog/bl-288
+- disposition: fixed
+
+---
+
+### BL-292 — run_command refuses bash, so a gate agent cannot run an existing shell script
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-292.md
+- done-when: run_command accepts bash as a permitted name and a call with a script path and fixed args returns the script's exit code. docker is named as the next same-shaped need and is not in this done-when. Design: docs/aetheris/backlog/bl-292
+- disposition: fixed
+
+---
+
+### BL-293 — run_command refuses docker, so a migrate agent cannot run the compose step
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-293.md
+- done-when: run_command accepts docker as a permitted name and a call with fixed args (compose run --rm …) returns the command's exit code. Design: docs/aetheris/backlog/bl-293
+- disposition: fixed
+
+---
+
+### BL-294 — run_command refuses curl, so an api agent cannot run the gate curls
+- state: done
+- type: missing capability
+- area: harness — exec server
+- priority: medium _(proposed)_ · size: S _(proposed)_
+- evidence: docs/evidence/BL-294.md
+- done-when: run_command accepts curl as a permitted name and a call with fixed args (GET or POST) returns the command's exit code. Design: docs/aetheris/backlog/bl-294
+- disposition: fixed

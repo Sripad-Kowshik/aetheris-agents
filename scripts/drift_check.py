@@ -1394,7 +1394,7 @@ def check_use_case_registry() -> None:
     if text is not None:
         m = _require_section(text, r"\bSECTIONS = \[(.*?)\n\]", check, "assemble_matrix.py SECTIONS")
         if m:
-            keys = set(re.findall(r'\(\s*"([a-z0-9_]+)"\s*,', m.group(1)))
+            keys = set(re.findall(r'\(\s*"([a-z0-9_-]+)"\s*,', m.group(1)))
             _compare(
                 check,
                 "assemble_matrix.SECTIONS vs the registry filtered to AGENT-BEARING use cases",

@@ -43,6 +43,8 @@ is a mapping in the check, named in its message, not a second registry.
 | `api/gateway` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `api/tenant` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `boxy-pipeline` | dormant | 2026-08-16 | Paused pending the client. | It runs again when boxy-pipeline work resumes. To restore it, delete the `pytestmark = pytest.mark.dormant` lines from `boxy-pipeline/tests/test_*.py`; nothing else was changed for the pause. **What un-pausing will cost is BL-159** — roughly four hours, no finish under either of two caps, one test red deliberately and a second failure not yet identified. Read that row first. |
+| `ct-bot` | active | 2026-10-06 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
+| `ct-rpg` | active | 2026-10-27 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `cloudcost` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `docbuilder` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `drive` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
@@ -51,10 +53,10 @@ is a mapping in the check, named in its message, not a second registry.
 | `payslip` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 | `provenance` | active | 2026-08-19 | Work is not paused. | Nothing pending. It becomes `dormant` when its work is paused and `pytest.mark.dormant` is applied to its tests. |
 
-**The nine active rows share one reason and one condition, and that is the honest answer rather
+**The active rows share one reason and one condition, and that is the honest answer rather
 than an unfinished one.** The reason field states business state; for a use case that is not
-paused the business state *is* "not paused", and nothing in the tree distinguishes the nine.
-Nine differently-worded sentences would be nine claims about roadmap intent that no committed
+paused the business state *is* "not paused", and nothing in the tree distinguishes them.
+Differently-worded sentences would be claims about roadmap intent that no committed
 artefact carries. The field earns its keep on the row that has something to say, and
 `boxy-pipeline` is that row. When a second use case pauses, its row states why, on the same
 shape.

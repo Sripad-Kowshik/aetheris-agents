@@ -378,6 +378,8 @@ def test_identical_tool_sets_list_every_sharing_agent(overlapping_matrix):
         "email_orchestrator (email)",
         "docbuilder_orchestrator (docbuilder)",
         "cloudcost_orchestrator (cloudcost)",
+        "ct-bot_orchestrator (ct-bot)",
+        "ct-rpg_orchestrator (ct-rpg)",
         "eduloka_orchestrator (eduloka)",
     ]
 

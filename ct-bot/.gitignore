@@ -1,0 +1,6 @@
+# Real panel/user data — never commit; committed samples, if any, carry a .example suffix
+data/
+
+# Generated output — local only
+output/*
+!output/.gitkeep
